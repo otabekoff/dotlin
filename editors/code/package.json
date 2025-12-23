@@ -1,0 +1,34 @@
+{
+    "name": "dotlin",
+    "displayName": "Dotlin Language Support",
+    "description": "Syntax highlighting for Dotlin",
+    "version": "0.1.0",
+    "engines": {
+        "vscode": "^1.75.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [
+            {
+                "id": "dotlin",
+                "aliases": [
+                    "Dotlin",
+                    "dotlin"
+                ],
+                "extensions": [
+                    ".lin"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "dotlin",
+                "scopeName": "source.dotlin",
+                "path": "./syntaxes/dotlin.tmLanguage.json"
+            }
+        ]
+    }
+}

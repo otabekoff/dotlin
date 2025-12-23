@@ -1,0 +1,9 @@
+[package]
+name = "dotlin_lexer"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+logos = { workspace = true }

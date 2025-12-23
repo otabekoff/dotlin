@@ -1,0 +1,10 @@
+[package]
+name = "dotlin_interpreter"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+dotlin_ast = { path = "../dotlin_ast" }
+thiserror = { workspace = true }

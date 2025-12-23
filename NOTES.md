@@ -1,0 +1,1 @@
+cargo run -p dotc -- test_string.lin -o string.exe && .\string.exe

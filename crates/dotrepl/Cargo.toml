@@ -1,0 +1,14 @@
+[package]
+name = "dotrepl"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+dotlin_interpreter = { path = "../dotlin_interpreter" }
+dotlin_parser = { path = "../dotlin_parser" }
+dotlin_lexer = { path = "../dotlin_lexer" }
+dotlin_ast = { path = "../dotlin_ast" }
+rustyline = "14.0"
+clap = { workspace = true }

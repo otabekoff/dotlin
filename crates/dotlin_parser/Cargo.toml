@@ -1,0 +1,11 @@
+[package]
+name = "dotlin_parser"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+dotlin_ast = { path = "../dotlin_ast" }
+dotlin_lexer = { path = "../dotlin_lexer" }
+thiserror = { workspace = true }

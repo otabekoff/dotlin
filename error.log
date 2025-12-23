@@ -1,0 +1,98 @@
+    Checking dotlin_codegen v0.1.0 (D:\rust\dotlin\crates\dotlin_codegen)
+warning: unused import: `Configurable`
+ --> crates\dotlin_codegen\src\lib.rs:2:41
+  |
+2 | use cranelift_codegen::settings::{self, Configurable};
+  |                                         ^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `ObjectProduct`
+ --> crates\dotlin_codegen\src\lib.rs:7:53
+  |
+7 | use cranelift_object::{ObjectBuilder, ObjectModule, ObjectProduct};
+  |                                                     ^^^^^^^^^^^^^
+
+warning: variable does not need to be mutable
+  --> crates\dotlin_codegen\src\lib.rs:55:25
+   |
+55 |                     let mut sig = self.module.make_signature();
+   |                         ----^^^
+   |                         |
+   |                         help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+error[E0507]: cannot move out of `self.module` which is behind a mutable reference
+   --> crates\dotlin_codegen\src\lib.rs:73:23
+    |
+ 73 |         let product = self.module.finish();
+    |                       ^^^^^^^^^^^ -------- `self.module` moved due to this method call
+    |                       |
+    |                       move occurs because `self.module` has type `ObjectModule`, which does not implement the `Copy` trait
+    |
+note: `ObjectModule::finish` takes ownership of the receiver `self`, which moves `self.module`
+   --> C:\Users\marko\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cranelift-object-0.111.5\src\backend.rs:496:23
+    |
+496 |     pub fn finish(mut self) -> ObjectProduct {
+    |                       ^^^^
+
+error[E0499]: cannot borrow `*self` as mutable more than once at a time
+   --> crates\dotlin_codegen\src\lib.rs:104:13
+    |
+ 86 |         let mut builder = FunctionBuilder::new(&mut ctx.func, &mut self.ctx);
+    |                                                               ------------- first mutable borrow occurs here
+...
+104 |             self.compile_statement(&mut builder, stmt, &mut variables, &mut index)?;
+    |             ^^^^                   ------------ first borrow later used here
+    |             |
+    |             second mutable borrow occurs here
+
+warning: unused variable: `func_id`
+  --> crates\dotlin_codegen\src\lib.rs:84:9
+   |
+84 |         func_id: FuncId,
+   |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_func_id`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `builder`
+   --> crates\dotlin_codegen\src\lib.rs:118:9
+    |
+118 |         builder: &mut FunctionBuilder,
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_builder`
+
+warning: unused variable: `stmt`
+   --> crates\dotlin_codegen\src\lib.rs:119:9
+    |
+119 |         stmt: &Statement,
+    |         ^^^^ help: if this is intentional, prefix it with an underscore: `_stmt`
+
+warning: unused variable: `vars`
+   --> crates\dotlin_codegen\src\lib.rs:120:9
+    |
+120 |         vars: &mut HashMap<String, Variable>,
+    |         ^^^^ help: if this is intentional, prefix it with an underscore: `_vars`
+
+warning: unused variable: `var_index`
+   --> crates\dotlin_codegen\src\lib.rs:121:9
+    |
+121 |         var_index: &mut usize,
+    |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_var_index`
+
+warning: unused variable: `expr`
+   --> crates\dotlin_codegen\src\lib.rs:137:9
+    |
+137 |         expr: &Expression,
+    |         ^^^^ help: if this is intentional, prefix it with an underscore: `_expr`
+
+warning: unused variable: `vars`
+   --> crates\dotlin_codegen\src\lib.rs:138:9
+    |
+138 |         vars: &HashMap<String, Variable>,
+    |         ^^^^ help: if this is intentional, prefix it with an underscore: `_vars`
+
+Some errors have detailed explanations: E0499, E0507.
+For more information about an error, try `rustc --explain E0499`.
+warning: `dotlin_codegen` (lib) generated 10 warnings
+error: could not compile `dotlin_codegen` (lib) due to 2 previous errors; 10 warnings emitted
