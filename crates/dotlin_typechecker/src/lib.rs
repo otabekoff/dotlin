@@ -154,6 +154,7 @@ impl TypeChecker {
                 Literal::Float(_) => Type::Named("Float".to_string()),
                 Literal::String(_) => Type::Named("String".to_string()),
                 Literal::Boolean(_) => Type::Named("Boolean".to_string()),
+                Literal::Char(_) => Type::Named("Char".to_string()),
             },
             ExpressionKind::Variable(name) => self.lookup_var(name)?.clone(),
             ExpressionKind::Assignment { name, value } => {
@@ -176,7 +177,8 @@ impl TypeChecker {
                 let rt = self.check_expression(right)?;
 
                 match operator {
-                    BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul | BinaryOp::Div => {
+                    BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul | BinaryOp::Div |
+                    BinaryOp::PlusEqual | BinaryOp::MinusEqual | BinaryOp::StarEqual | BinaryOp::SlashEqual => {
                         if lt == Type::Named("String".to_string())
                             && rt == Type::Named("String".to_string())
                             && matches!(operator, BinaryOp::Add)
@@ -247,6 +249,18 @@ impl TypeChecker {
                             });
                         }
                         ot
+                    }
+                    UnaryOp::Increment | UnaryOp::Decrement => {
+                        // Increment and decrement can only be applied to numeric types
+                        if ot != Type::Named("Int".to_string())
+                            && ot != Type::Named("Float".to_string())
+                        {
+                            return Err(TypeError::Mismatch {
+                                expected: Type::Named("Int".to_string()),
+                                found: ot,
+                            });
+                        }
+                        ot // The result type is the same as the operand type
                     }
                 }
             }
@@ -328,6 +342,16 @@ impl TypeChecker {
                             });
                         }
                         *element_type.clone()
+                    }
+                    Type::Named(name) if name == "String" => {
+                        // String indexing: index must be Int
+                        if idx_typ != Type::Named("Int".to_string()) {
+                            return Err(TypeError::Mismatch {
+                                expected: Type::Named("Int".to_string()),
+                                found: idx_typ,
+                            });
+                        }
+                        Type::Named("Char".to_string()) // String indexing returns Char
                     }
                     Type::Map(key_type, value_type) => {
                         // HashMap indexing: key type must match map's key type

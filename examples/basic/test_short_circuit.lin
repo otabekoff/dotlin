@@ -1,0 +1,21 @@
+fun main() {
+    // Test short-circuit behavior
+    println("Testing short-circuit evaluation:")
+    
+    // This should evaluate to false without evaluating the right side
+    var result1 = false && (println("This should NOT print") && true)
+    println("false && (side_effect) = " + result1)
+    
+    // This should evaluate to true without evaluating the right side  
+    var result2 = true || (println("This should NOT print") || false)
+    println("true || (side_effect) = " + result2)
+    
+    // These should evaluate both sides normally
+    var result3 = true && true
+    println("true && true = " + result3)
+    
+    var result4 = false || true
+    println("false || true = " + result4)
+    
+    println("Short-circuit test completed!")
+}

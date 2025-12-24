@@ -1,12 +1,12 @@
 # Dotlin Implementation Status - December 24, 2025
 
-## 🎉 Current Status: v0.2.5-alpha (Arrays and HashMaps Implemented)
+## 🎉 Current Status: v0.2.8-alpha (Data Types and Operations Implemented)
 
 ### ✅ **Completed Features**
 
 #### Core Language
-- **Lexer**: Tokenization with support for keywords, identifiers, literals, operators
-- **Parser**: Recursive descent parsing with expression precedence
+- **Lexer**: Tokenization with support for keywords, identifiers, literals, operators (`&&`, `||`)
+- **Parser**: Recursive descent parsing with expression precedence and logical operators (`&&`, `||`)
 - **AST**: Abstract syntax tree with type annotations
 - **Type System**: Int, Float, String, Boolean with type inference and checking
 - **Code Generation**: Cranelift IR backend with optimizations
@@ -15,10 +15,14 @@
 #### Data Types & Operations
 - **Integers**: Full arithmetic and comparison operations
 - **Floats**: 64-bit floating-point with arithmetic and comparisons
-- **Strings**: Length-prefixed format, concatenation, comparison, length property
-- **Booleans**: Logical operations (`&&`, `||`) and comparisons
+- **Characters**: Char type with single character literals `'A'`
+- **Strings**: Length-prefixed format, concatenation, comparison, length property, indexing with `str[index]`
+- **Booleans**: Logical operations (`&&`, `||`) with short-circuit evaluation and comparisons
 - **Arrays**: Literal syntax `[1, 2, 3]` and indexing `arr[0]`
 - **HashMaps**: Type support with generic types, basic operations (get, set, remove, contains), literal syntax `{key: value}`
+- **Compound Assignment**: Operators `+=`, `-=`, `*=`, `/=` for arithmetic operations
+- **Increment/Decrement**: Operators `++`, `--` for value modification
+- **Comments**: Single-line `//` and multi-line `/* */` comment support
 
 #### Standard Library Functions
 - **File I/O**: `readFile`, `writeFile`, `appendFile`, `fileExists`
@@ -70,10 +74,26 @@
 - [ ] foreach support for HashMaps
 
 #### v0.2.7: Enhanced Boolean and Logical Operations (March 2025)
-- [ ] Logical AND operator (&&) with short-circuit evaluation
-- [ ] Logical OR operator (||) with short-circuit evaluation
+- [x] Basic logical AND operator (&&) implemented
+- [x] Basic logical OR operator (||) implemented
+- [x] Short-circuit evaluation for logical operators
 - [ ] Boolean coercion in conditional contexts
-- [ ] Boolean operator precedence and associativity
+- [x] Boolean operator precedence and associativity (partially implemented)
+
+#### v0.2.8: Data Types and Operations (April 2025)
+- [x] Character type (Char) and literals
+- [x] Float/Double type support
+- [x] Compound assignment operators (+=, -=, *=, /=)
+- [x] Increment/decrement operators (++/--) 
+- [x] String indexing with [index] syntax
+- [x] Comments (single-line // and multi-line /* */)
+- [ ] Type conversion functions (.toInt(), .toFloat(), etc.)
+
+#### v0.2.9: Type Conversion Functions (May 2025)
+- [ ] Type conversion methods (.toInt(), .toFloat(), .toString(), etc.)
+- [ ] Explicit casting operations
+- [ ] Type safety for conversions
+- [ ] Error handling for invalid conversions
 
 #### v0.3.0: Package Manager (March 2025)
 - [ ] `dotpkg` CLI tool for dependency management
@@ -87,7 +107,7 @@
 
 #### v0.5.0: Advanced Features (June 2025)
 - [ ] Generic types and functions (Required for advanced HashMap usage)
- - [ ] HashMap iteration support (keys, values, entries - implemented as separate feature in v0.2.6)
+
 - [ ] Trait system for interfaces
 - [ ] Pattern matching with `match` expressions
 - [ ] Closures and anonymous functions
@@ -224,6 +244,15 @@ fun main() {
    - Constants (PI, E)
    - Advanced operations
 
+5. **Data Types and Operations** (Current)
+   - [x] Character type (Char) and literals
+   - [x] Float/Double type support
+   - [x] Compound assignment operators (+=, -=, *=, /=)
+   - [x] Increment/decrement operators (++/--)
+   - [x] String indexing with [index] syntax
+   - [x] Comments (single-line // and multi-line /* */)
+   - [ ] Type conversion functions (.toInt(), .toFloat(), etc.)
+
 ### 📊 **Project Metrics**
 
 - **Lines of Code**: ~15,000
@@ -245,5 +274,5 @@ MIT or Apache 2.0 (to be decided)
 
 ---
 **Last Updated**: December 24, 2025  
-**Current Version**: v0.2.5-alpha (Arrays and HashMaps Implemented)  
-**Next Release**: v0.3.0 (Package Manager) - March 2025
+**Current Version**: v0.2.8-alpha (Data Types and Operations Implemented)  
+**Next Release**: v0.2.9 (Type Conversion Functions) - May 2025

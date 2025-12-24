@@ -13,3 +13,8 @@ logos = "0.14"
 thiserror = "2.0"
 miette = { version = "7.2", features = ["fancy"] }
 clap = { version = "4.5", features = ["derive"] }
+
+dotlin_lexer = { path = "crates/dotlin_lexer" }
+dotlin_parser = { path = "crates/dotlin_parser" }
+dotlin_interpreter = { path = "crates/dotlin_interpreter" }
+dotlin_typechecker = { path = "crates/dotlin_typechecker" }

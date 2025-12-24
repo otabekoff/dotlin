@@ -1,0 +1,43 @@
+fun main() {
+    // Test Char literals
+    var charA = 'A'
+    var charB = 'B'
+    println("Char A: " + charA)
+    println("Char B: " + charB)
+    
+    // Test compound assignment operators
+    var num = 10
+    num += 5
+    println("num += 5: " + num)  // Should be 15
+    
+    num -= 3
+    println("num -= 3: " + num)  // Should be 12
+    
+    num *= 2
+    println("num *= 2: " + num)  // Should be 24
+    
+    num /= 4
+    println("num /= 4: " + num)  // Should be 6
+    
+    // Test increment/decrement operators
+    var counter = 5
+    println("counter: " + counter++)
+    println("counter after post-increment: " + counter)  // Should be 6
+    
+    println("counter before pre-decrement: " + --counter)  // Should be 5
+    println("counter after pre-decrement: " + counter)  // Should be 5
+    
+    // Test string indexing
+    var text = "Hello"
+    println("First char: " + text[0])  // Should be 'H'
+    println("Third char: " + text[2])  // Should be 'l'
+    
+    // Test Float operations
+    var floatNum = 3.14
+    println("Float number: " + floatNum)
+    
+    var result = floatNum + 2.0
+    println("Float result: " + result)
+    
+    println("All new features test completed!")
+}

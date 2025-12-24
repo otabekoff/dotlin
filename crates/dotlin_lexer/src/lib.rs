@@ -33,6 +33,9 @@ pub enum Token {
     #[regex(r#""([^"\\]|\\["\\bnfrt]|u[a-fA-F0-9]{4})*""#, |lex| lex.slice().to_string())]
     String(String),
 
+    #[regex("'([^'\\\\]|\\[\\'bnfrt]|u[a-fA-F0-9]{4})'", |lex| lex.slice().chars().nth(1).unwrap_or('\0'))]
+    Char(char),
+
     #[regex("-?[0-9]+\\.[0-9]+", |lex| lex.slice().parse().map_err(|_| ()))]
     Float(f64),
 
@@ -58,12 +61,20 @@ pub enum Token {
     Colon,
     #[token("+")]
     Plus,
+    #[token("+=")]
+    PlusEqual,
     #[token("-")]
     Minus,
+    #[token("-=")]
+    MinusEqual,
     #[token("*")]
     Star,
+    #[token("*=")]
+    StarEqual,
     #[token("/")]
     Slash,
+    #[token("/=")]
+    SlashEqual,
     #[token("=")]
     Equal,
     #[token("==")]
@@ -84,6 +95,10 @@ pub enum Token {
     GreaterEqual,
     #[token("!")]
     Not,
+    #[token("++")]
+    Increment,
+    #[token("--")]
+    Decrement,
     #[token(".")]
     Dot,
 

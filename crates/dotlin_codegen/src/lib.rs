@@ -520,6 +520,10 @@ impl CodeGenerator {
                         DotlinType::String,
                     ))
                 }
+                Literal::Char(c) => {
+                    // Treat char as integer value
+                    Ok((builder.ins().iconst(types::I64, *c as i64), DotlinType::Int))
+                }
             },
             ExpressionKind::Variable(name) => {
                 if let Some((var, dt)) = vars.get(name) {
@@ -588,6 +592,11 @@ impl CodeGenerator {
                             // This requires more complex logic to handle short-circuiting
                             return Err(CompileError::UndefinedVariable("Boolean operators not supported in this context".to_string()));
                         }
+                        BinaryOp::PlusEqual | BinaryOp::MinusEqual | BinaryOp::StarEqual | BinaryOp::SlashEqual => {
+                            // Compound assignment operators need special handling
+                            // For now, we'll return an error until we implement them
+                            return Err(CompileError::UndefinedVariable("Compound assignment operators not implemented in this context".to_string()));
+                        }
                     };
                     let out_dt = match operator {
                         BinaryOp::Equal
@@ -621,6 +630,11 @@ impl CodeGenerator {
                             // For now, we'll handle boolean operations at runtime
                             // This requires more complex logic to handle short-circuiting
                             return Err(CompileError::UndefinedVariable("Boolean operators not supported in this context".to_string()));
+                        }
+                        BinaryOp::PlusEqual | BinaryOp::MinusEqual | BinaryOp::StarEqual | BinaryOp::SlashEqual => {
+                            // Compound assignment operators need special handling
+                            // For now, we'll return an error until we implement them
+                            return Err(CompileError::UndefinedVariable("Compound assignment operators not implemented in this context".to_string()));
                         }
                     };
                     let out_dt = match operator {
@@ -701,6 +715,8 @@ impl CodeGenerator {
             ExpressionKind::Unary { operator, operand } => {
                 let (val, dt) =
                     Self::compile_expression(module, builder, strings, functions, operand, vars)?;
+                let one_f64 = builder.ins().f64const(1.0);
+                let one_i64 = builder.ins().iconst(types::I64, 1);
                 match operator {
                     UnaryOp::Minus => {
                         if dt == DotlinType::Float {
@@ -715,6 +731,22 @@ impl CodeGenerator {
                             builder.ins().icmp(IntCC::Equal, val, zero),
                             DotlinType::Boolean,
                         ))
+                    }
+                    UnaryOp::Increment => {
+                        // Increment the value by 1
+                        if dt == DotlinType::Float {
+                            Ok((builder.ins().fadd(val, one_f64), DotlinType::Float))
+                        } else {
+                            Ok((builder.ins().iadd(val, one_i64), DotlinType::Int))
+                        }
+                    }
+                    UnaryOp::Decrement => {
+                        // Decrement the value by 1
+                        if dt == DotlinType::Float {
+                            Ok((builder.ins().fsub(val, one_f64), DotlinType::Float))
+                        } else {
+                            Ok((builder.ins().isub(val, one_i64), DotlinType::Int))
+                        }
                     }
                 }
             }

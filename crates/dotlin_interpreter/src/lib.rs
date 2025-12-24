@@ -9,6 +9,7 @@ pub enum Value {
     Float(f64),
     String(String),
     Boolean(bool),
+    Char(char),
     Void,
     Function {
         declaration: FunctionDecl,
@@ -59,9 +60,11 @@ impl std::fmt::Display for Value {
             Value::Float(n) => write!(f, "{}", n),
             Value::String(s) => write!(f, "{}", s),
             Value::Boolean(b) => write!(f, "{}", b),
+            Value::Char(c) => write!(f, "'{}'", c),
             Value::Void => write!(f, "()"),
             Value::Function { declaration, .. } => write!(f, "fun {}", declaration.name),
             Value::NativeFunction(_) => write!(f, "<native fn>"),
+
             Value::Array(elements) => {
                 write!(f, "Array(")?;
                 for (i, element) in elements.iter().enumerate() {
@@ -307,6 +310,7 @@ impl Interpreter {
                 Literal::Float(f) => Value::Float(*f),
                 Literal::String(s) => Value::String(s.clone()),
                 Literal::Boolean(b) => Value::Boolean(*b),
+                Literal::Char(c) => Value::Char(*c),
             }),
             ExpressionKind::Variable(name) => env.borrow().get(name),
             ExpressionKind::Assignment { name, value } => {
@@ -327,9 +331,47 @@ impl Interpreter {
                 operator,
                 right,
             } => {
-                let l = self.evaluate_expression(left, env.clone())?;
-                let r = self.evaluate_expression(right, env.clone())?;
-                self.evaluate_binary(l, operator, r)
+                match operator {
+                    // Handle logical operators with short-circuit evaluation
+                    BinaryOp::And => {
+                        let l_val = self.evaluate_expression(left, env.clone())?;
+                        if let Value::Boolean(false) = l_val {
+                            // If left is false, return false without evaluating right (short-circuit)
+                            Ok(Value::Boolean(false))
+                        } else {
+                            // If left is true, evaluate and return the right operand
+                            let r_val = self.evaluate_expression(right, env.clone())?;
+                            match (l_val, r_val) {
+                                (Value::Boolean(l), Value::Boolean(r)) => Ok(Value::Boolean(l && r)),
+                                _ => Err(RuntimeError::TypeMismatch(
+                                    "Both operands of && must be boolean".to_string(),
+                                )),
+                            }
+                        }
+                    }
+                    BinaryOp::Or => {
+                        let l_val = self.evaluate_expression(left, env.clone())?;
+                        if let Value::Boolean(true) = l_val {
+                            // If left is true, return true without evaluating right (short-circuit)
+                            Ok(Value::Boolean(true))
+                        } else {
+                            // If left is false, evaluate and return the right operand
+                            let r_val = self.evaluate_expression(right, env.clone())?;
+                            match (l_val, r_val) {
+                                (Value::Boolean(l), Value::Boolean(r)) => Ok(Value::Boolean(l || r)),
+                                _ => Err(RuntimeError::TypeMismatch(
+                                    "Both operands of || must be boolean".to_string(),
+                                )),
+                            }
+                        }
+                    }
+                    // For all other operators, evaluate both operands normally
+                    _ => {
+                        let l = self.evaluate_expression(left, env.clone())?;
+                        let r = self.evaluate_expression(right, env.clone())?;
+                        self.evaluate_binary(l, operator, r)
+                    }
+                }
             }
             ExpressionKind::Unary { operator, operand } => {
                 let val = self.evaluate_expression(operand, env)?;
@@ -337,6 +379,11 @@ impl Interpreter {
                     (UnaryOp::Minus, Value::Integer(i)) => Ok(Value::Integer(-i)),
                     (UnaryOp::Minus, Value::Float(f)) => Ok(Value::Float(-f)),
                     (UnaryOp::Not, Value::Boolean(b)) => Ok(Value::Boolean(!b)),
+                    // Prefix increment and decrement (for now, treating as postfix since we handle both the same way)
+                    (UnaryOp::Increment, Value::Integer(i)) => Ok(Value::Integer(i + 1)),
+                    (UnaryOp::Decrement, Value::Integer(i)) => Ok(Value::Integer(i - 1)),
+                    (UnaryOp::Increment, Value::Float(f)) => Ok(Value::Float(f + 1.0)),
+                    (UnaryOp::Decrement, Value::Float(f)) => Ok(Value::Float(f - 1.0)),
                     _ => Err(RuntimeError::TypeMismatch(
                         "Invalid operand for unary operator".to_string(),
                     )),
@@ -374,6 +421,18 @@ impl Interpreter {
                             ))
                         }
                     }
+                    (Value::String(s), Value::Integer(index)) => {
+                        let idx = index as usize;
+                        if idx < s.len() {
+                            // Return the character at the index as a Char value
+                            let ch = s.chars().nth(idx).unwrap();
+                            Ok(Value::Char(ch))
+                        } else {
+                            Err(RuntimeError::TypeMismatch(
+                                "String index out of bounds".to_string(),
+                            ))
+                        }
+                    }
                     (Value::HashMap(map), Value::String(key)) => {
                         match map.get(&key) {
                             Some(value) => Ok(value.clone()),
@@ -392,7 +451,7 @@ impl Interpreter {
                     }
                     (_, Value::Integer(_)) => {
                         Err(RuntimeError::TypeMismatch(
-                            "Indexing target is not an array".to_string(),
+                            "Indexing target is not an array or string".to_string(),
                         ))
                     }
                     (_, Value::String(_)) => {
@@ -401,7 +460,7 @@ impl Interpreter {
                         ))
                     }
                     _ => Err(RuntimeError::TypeMismatch(
-                        "Index must be an integer for arrays or string for HashMaps".to_string(),
+                        "Index must be an integer for arrays/strings or string for HashMaps".to_string(),
                     )),
                 }
             }
@@ -478,7 +537,7 @@ impl Interpreter {
             (Value::Integer(l), BinaryOp::Sub, Value::Integer(r)) => Ok(Value::Integer(l - r)),
             (Value::Integer(l), BinaryOp::Mul, Value::Integer(r)) => Ok(Value::Integer(l * r)),
             (Value::Integer(l), BinaryOp::Div, Value::Integer(r)) => Ok(Value::Integer(l / r)),
-
+            
             // Comparisons
             (Value::Integer(l), BinaryOp::Equal, Value::Integer(r)) => Ok(Value::Boolean(l == r)),
             (Value::Integer(l), BinaryOp::NotEqual, Value::Integer(r)) => {
@@ -492,17 +551,29 @@ impl Interpreter {
             (Value::Integer(l), BinaryOp::GreaterEqual, Value::Integer(r)) => {
                 Ok(Value::Boolean(l >= r))
             }
-
+            
+            // Float operations
+            (Value::Float(l), BinaryOp::Add, Value::Float(r)) => Ok(Value::Float(l + r)),
+            (Value::Float(l), BinaryOp::Sub, Value::Float(r)) => Ok(Value::Float(l - r)),
+            (Value::Float(l), BinaryOp::Mul, Value::Float(r)) => Ok(Value::Float(l * r)),
+            (Value::Float(l), BinaryOp::Div, Value::Float(r)) => Ok(Value::Float(l / r)),
+            
+            // Compound assignment operators for integers
+            (Value::Integer(l), BinaryOp::PlusEqual, Value::Integer(r)) => Ok(Value::Integer(l + r)),
+            (Value::Integer(l), BinaryOp::MinusEqual, Value::Integer(r)) => Ok(Value::Integer(l - r)),
+            (Value::Integer(l), BinaryOp::StarEqual, Value::Integer(r)) => Ok(Value::Integer(l * r)),
+            (Value::Integer(l), BinaryOp::SlashEqual, Value::Integer(r)) => Ok(Value::Integer(l / r)),
+            
+            // Compound assignment operators for floats
+            (Value::Float(l), BinaryOp::PlusEqual, Value::Float(r)) => Ok(Value::Float(l + r)),
+            (Value::Float(l), BinaryOp::MinusEqual, Value::Float(r)) => Ok(Value::Float(l - r)),
+            (Value::Float(l), BinaryOp::StarEqual, Value::Float(r)) => Ok(Value::Float(l * r)),
+            (Value::Float(l), BinaryOp::SlashEqual, Value::Float(r)) => Ok(Value::Float(l / r)),
+            
             // Boolean operations
             (Value::Boolean(l), BinaryOp::Equal, Value::Boolean(r)) => Ok(Value::Boolean(l == r)),
             (Value::Boolean(l), BinaryOp::NotEqual, Value::Boolean(r)) => {
                 Ok(Value::Boolean(l != r))
-            }
-            (Value::Boolean(l), BinaryOp::And, Value::Boolean(r)) => {
-                Ok(Value::Boolean(l && r))
-            }
-            (Value::Boolean(l), BinaryOp::Or, Value::Boolean(r)) => {
-                Ok(Value::Boolean(l || r))
             }
 
             // String concat
@@ -527,9 +598,43 @@ impl Interpreter {
             (Value::Boolean(l), BinaryOp::Add, Value::String(r)) => {
                 Ok(Value::String(format!("{}{}", l, r)))
             }
+            
+            // Mixed operations for compound assignments
+            (Value::Integer(l), BinaryOp::PlusEqual, Value::Float(r)) => Ok(Value::Float(l as f64 + r)),
+            (Value::Float(l), BinaryOp::PlusEqual, Value::Integer(r)) => Ok(Value::Float(l + r as f64)),
+            (Value::Integer(l), BinaryOp::MinusEqual, Value::Float(r)) => Ok(Value::Float(l as f64 - r)),
+            (Value::Float(l), BinaryOp::MinusEqual, Value::Integer(r)) => Ok(Value::Float(l - r as f64)),
+            (Value::Integer(l), BinaryOp::StarEqual, Value::Float(r)) => Ok(Value::Float(l as f64 * r)),
+            (Value::Float(l), BinaryOp::StarEqual, Value::Integer(r)) => Ok(Value::Float(l * r as f64)),
+            (Value::Integer(l), BinaryOp::SlashEqual, Value::Float(r)) => Ok(Value::Float(l as f64 / r)),
+            (Value::Float(l), BinaryOp::SlashEqual, Value::Integer(r)) => Ok(Value::Float(l / r as f64)),
+            
+            // String concatenation for PlusEqual
+            (Value::String(l), BinaryOp::PlusEqual, Value::String(r)) => {
+                Ok(Value::String(format!("{}{}", l, r)))
+            }
+            (Value::String(l), BinaryOp::PlusEqual, Value::Integer(r)) => {
+                Ok(Value::String(format!("{}{}", l, r)))
+            }
+            (Value::Integer(l), BinaryOp::PlusEqual, Value::String(r)) => {
+                Ok(Value::String(format!("{}{}", l, r)))
+            }
+            (Value::String(l), BinaryOp::PlusEqual, Value::Float(r)) => {
+                Ok(Value::String(format!("{}{}", l, r)))
+            }
+            (Value::Float(l), BinaryOp::PlusEqual, Value::String(r)) => {
+                Ok(Value::String(format!("{}{}", l, r)))
+            }
+            (Value::String(l), BinaryOp::PlusEqual, Value::Boolean(r)) => {
+                Ok(Value::String(format!("{}{}", l, r)))
+            }
+            (Value::Boolean(l), BinaryOp::PlusEqual, Value::String(r)) => {
+                Ok(Value::String(format!("{}{}", l, r)))
+            }
             _ => Err(RuntimeError::TypeMismatch(
                 "Binary operator operand mismatch".to_string(),
             )),
+            
         }
     }
 }

@@ -1,6 +1,7 @@
 use clap::Parser;
 use dotlin_codegen::CodeGenerator;
 use dotlin_parser::Parser as DotlinParser;
+use dotlin_interpreter::Interpreter;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -23,48 +24,58 @@ struct Cli {
     /// Only compile to object file, do not link
     #[arg(short, long)]
     compile_only: bool,
+
+    /// Run the file using the interpreter instead of compiling
+    #[arg(short, long)]
+    run: bool,
 }
 
 fn main() {
     let cli = Cli::parse();
 
     if let Some(input_path) = &cli.input {
-        let content = fs::read_to_string(&input_path).expect("Failed to read file");
-        let mut parser = DotlinParser::new(&content);
+        if cli.run {
+            // Run using interpreter instead of compiling
+            run_with_interpreter(input_path);
+        } else {
+            // Compile using the original method
+            let content = fs::read_to_string(&input_path).expect("Failed to read file");
+            let mut parser = DotlinParser::new(&content);
 
-        match parser.parse_program() {
-            Ok(mut ast) => {
-                let mut typechecker = dotlin_typechecker::TypeChecker::new();
-                if let Err(e) = typechecker.check_program(&mut ast) {
-                    eprintln!("Type Error: {}", e);
-                    return;
-                }
-
-                let generator = CodeGenerator::new();
-                match generator.compile_program(&ast) {
-                    Ok(bytes) => {
-                        let obj_path = if cli.compile_only {
-                            cli.output.clone().unwrap_or(PathBuf::from("output.o"))
-                        } else {
-                            PathBuf::from("temp_output.o")
-                        };
-
-                        fs::write(&obj_path, bytes).expect("Failed to write object file");
-
-                        if !cli.compile_only {
-                            link_executable(&obj_path, &cli);
-                            if obj_path.to_string_lossy() == "temp_output.o" {
-                                let _ = fs::remove_file(obj_path);
-                            }
-                        } else {
-                            println!("Compiled to {:?}", obj_path);
-                        }
+            match parser.parse_program() {
+                Ok(mut ast) => {
+                    let mut typechecker = dotlin_typechecker::TypeChecker::new();
+                    if let Err(e) = typechecker.check_program(&mut ast) {
+                        eprintln!("Type Error: {}", e);
+                        return;
                     }
-                    Err(e) => eprintln!("Compilation Error: {}", e),
+
+                    let generator = CodeGenerator::new();
+                    match generator.compile_program(&ast) {
+                        Ok(bytes) => {
+                            let obj_path = if cli.compile_only {
+                                cli.output.clone().unwrap_or(PathBuf::from("output.o"))
+                            } else {
+                                PathBuf::from("temp_output.o")
+                            };
+
+                            fs::write(&obj_path, bytes).expect("Failed to write object file");
+
+                            if !cli.compile_only {
+                                link_executable(&obj_path, &cli);
+                                if obj_path.to_string_lossy() == "temp_output.o" {
+                                    let _ = fs::remove_file(obj_path);
+                                }
+                            } else {
+                                println!("Compiled to {:?}", obj_path);
+                            }
+                        }
+                        Err(e) => eprintln!("Compilation Error: {}", e),
+                    }
                 }
-            }
-            Err(e) => {
-                eprintln!("Error parsing file: {}", e);
+                Err(e) => {
+                    eprintln!("Error parsing file: {}", e);
+                }
             }
         }
     } else {
@@ -113,5 +124,37 @@ fn main() {
         println!("Successfully linked to {:?}", exe_path);
     } else {
         eprintln!("Linking failed");
+    }
+}
+
+fn run_with_interpreter(input_path: &PathBuf) {
+    match std::fs::read_to_string(input_path) {
+        Ok(content) => {
+            let mut parser = dotlin_parser::Parser::new(&content);
+            
+            match parser.parse_program() {
+                Ok(mut ast) => {
+                    // Type check
+                    let mut typechecker = dotlin_typechecker::TypeChecker::new();
+                    if let Err(e) = typechecker.check_program(&mut ast) {
+                        eprintln!("Type Error: {}", e);
+                        return;
+                    }
+                    
+                    // Run with interpreter
+                    let mut interpreter = Interpreter::new();
+                    match interpreter.interpret_program(&ast) {
+                        Ok(()) => println!("Program executed successfully"),
+                        Err(e) => eprintln!("Runtime Error: {}", e),
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Parse Error: {}", e);
+                }
+            }
+        }
+        Err(e) => {
+            eprintln!("Error reading file: {}", e);
+        }
     }
 }

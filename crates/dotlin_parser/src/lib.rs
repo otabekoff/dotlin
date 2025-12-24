@@ -269,6 +269,33 @@ impl<'a> Parser<'a> {
                 // Using UnexpectedToken for now, ideally "Invalid assignment target"
                 return Err(ParseError::UnexpectedToken(Token::Equal));
             }
+        } else if self.peek() == Some(&Token::PlusEqual) || self.peek() == Some(&Token::MinusEqual) ||
+                  self.peek() == Some(&Token::StarEqual) || self.peek() == Some(&Token::SlashEqual) {
+            // Handle compound assignment operators
+            let op_token = self.advance().unwrap();
+            let value = self.parse_expression()?; // Right-associative
+
+            if let ExpressionKind::Variable(name) = *expr.kind {
+                // Convert compound assignment to regular assignment with binary operation
+                let binary_op = match op_token {
+                    Token::PlusEqual => BinaryOp::Add,
+                    Token::MinusEqual => BinaryOp::Sub,
+                    Token::StarEqual => BinaryOp::Mul,
+                    Token::SlashEqual => BinaryOp::Div,
+                    _ => unreachable!(),
+                };
+                
+                let binary_expr = Expression::new(ExpressionKind::Binary {
+                    left: Expression::new(ExpressionKind::Variable(name.clone())),
+                    operator: binary_op,
+                    right: value,
+                });
+                
+                return Ok(Expression::new(ExpressionKind::Assignment { name, value: binary_expr }));
+            } else {
+                // Using UnexpectedToken for now, ideally "Invalid assignment target"
+                return Err(ParseError::UnexpectedToken(op_token));
+            }
         }
         Ok(expr)
     }
@@ -414,10 +441,12 @@ impl<'a> Parser<'a> {
     fn parse_unary(&mut self) -> Result<Expression, ParseError> {
         if let Some(token) = self.peek() {
             match token {
-                Token::Minus | Token::Not => {
+                Token::Minus | Token::Not | Token::Increment | Token::Decrement => {
                     let op = match self.advance().unwrap() {
                         Token::Minus => UnaryOp::Minus,
                         Token::Not => UnaryOp::Not,
+                        Token::Increment => UnaryOp::Increment,
+                        Token::Decrement => UnaryOp::Decrement,
                         _ => unreachable!(),
                     };
                     let right = self.parse_unary()?;
@@ -478,6 +507,22 @@ impl<'a> Parser<'a> {
                         index,
                     });
                 }
+                Token::Increment => {
+                    // Parse postfix increment: expr++
+                    self.advance(); // consume ++
+                    expr = Expression::new(ExpressionKind::Unary {
+                        operator: UnaryOp::Increment,
+                        operand: expr,
+                    });
+                }
+                Token::Decrement => {
+                    // Parse postfix decrement: expr--
+                    self.advance(); // consume --
+                    expr = Expression::new(ExpressionKind::Unary {
+                        operator: UnaryOp::Decrement,
+                        operand: expr,
+                    });
+                }
                 _ => break,
             }
         }
@@ -503,6 +548,13 @@ impl<'a> Parser<'a> {
                 // Remove quotes
                 let content = s.trim_matches('"').to_string();
                 Ok(Expression::new(ExpressionKind::Literal(Literal::String(
+                    content,
+                ))))
+            }
+            Some(Token::Char(c)) => {
+                // Remove single quotes
+                let content = c; // The lexer already extracted the character
+                Ok(Expression::new(ExpressionKind::Literal(Literal::Char(
                     content,
                 ))))
             }

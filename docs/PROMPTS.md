@@ -1,5 +1,3 @@
-Zed editor extension for this programming language and also syntax highlighting, organize project level stuff and move files into their folders, write documents, write tests, and do more about organization.
-
 Does our programming language Dotlin supports functions?
 fun main() {
   println("Hello World")

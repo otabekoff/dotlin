@@ -13,4 +13,5 @@ dotlin_ast = { path = "../dotlin_ast" }
 dotlin_lexer = { path = "../dotlin_lexer" }
 dotlin_codegen = { path = "../dotlin_codegen" }
 dotlin_typechecker = { path = "../dotlin_typechecker" }
+dotlin_interpreter = { path = "../dotlin_interpreter" }
 cc = "1.0"

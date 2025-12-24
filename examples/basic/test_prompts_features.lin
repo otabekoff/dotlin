@@ -1,0 +1,132 @@
+fun main() {
+    // Functions
+    println("Hello World")
+    
+    // Print functions
+    println("Hello World!")
+    println("I am learning Dotlin.")
+    println("It is awesome!")
+    
+    println(3 + 3)
+    
+    print("Hello World! ")
+    print("I am learning Dotlin. ")
+    print("It is awesome!")
+    
+    // Variables with var and val
+    var name = "John"
+    val birthyear = 1975
+    
+    println(name)
+    println(birthyear)
+    
+    // Variable types
+    var nameTyped: String = "John"
+    val birthyearTyped: Int = 1975
+    
+    println(nameTyped)
+    println(birthyearTyped)
+    
+    // Declaring variable without value but with type
+    var nameLater: String
+    nameLater = "John"
+    println(nameLater)
+    
+    // Data types
+    val myNum = 5             // Int
+    val myDoubleNum = 5.99    // Double - may not be implemented yet
+    val myLetter = 'D'        // Char - may not be implemented yet
+    val myBoolean = true      // Boolean
+    val myText = "Hello"      // String
+    
+    println(myNum)
+    // println(myDoubleNum)  // Skipping since Double may not be implemented
+    // println(myLetter)     // Skipping since Char may not be implemented
+    println(myBoolean)
+    println(myText)
+    
+    // Specific type declarations
+    val myNumTyped: Int = 5
+    // val myDoubleNumTyped: Double = 5.99  // Skipping
+    // val myLetterTyped: Char = 'D'        // Skipping
+    val myBooleanTyped: Boolean = true
+    val myTextTyped: String = "Hello"
+    
+    println(myNumTyped)
+    println(myBooleanTyped)
+    println(myTextTyped)
+    
+    // Numbers - Integer types
+    // val myNumByte: Byte = 100  // Skipping - Byte may not be implemented
+    // val myNumShort: Short = 5000  // Skipping - Short may not be implemented
+    val myNumInt: Int = 100000
+    // val myNumLong: Long = 15000000000L  // Skipping - Long may not be implemented
+    
+    println(myNumInt)
+    
+    // Booleans
+    val isDotlinFun: Boolean = true
+    val isFishTasty: Boolean = false
+    println(isDotlinFun)
+    println(isFishTasty)
+    
+    // Characters - may not be implemented
+    // val myGrade: Char = 'B'  // Skipping
+    // println(myGrade)
+    
+    // Strings
+    val myTextStr: String = "Hello World"
+    println(myTextStr)
+    
+    // String indexing - may not be implemented
+    // var txt = "Hello World"
+    // println(txt[0])  // first element (H)
+    // println(txt[2])  // third element (l)
+    
+    // Arrays - should be implemented
+    var arr = [1, 2, 3, 4, 5]
+    println(arr[0])
+    println(arr[1])
+    
+    // Operators
+    var x = 100 + 50
+    println(x)
+    
+    var sum1 = 100 + 50       // 150 (100 + 50)
+    var sum2 = sum1 + 250     // 400 (150 + 250)
+    var sum3 = sum2 + sum2    // 800 (400 + 400)
+    println(sum1)
+    println(sum2)
+    println(sum3)
+    
+    // Assignment operators - may not be implemented
+    var y = 10
+    // y += 5  // Skipping - += may not be implemented
+    println(y)
+    
+    // Comparison operators
+    var isEqual = (5 == 5)
+    var isNotEqual = (5 != 3)
+    var isGreater = (5 > 3)
+    var isLess = (3 < 5)
+    var isGreaterOrEqual = (5 >= 5)
+    var isLessOrEqual = (3 <= 5)
+    
+    println(isEqual)
+    println(isNotEqual)
+    println(isGreater)
+    println(isLess)
+    println(isGreaterOrEqual)
+    println(isLessOrEqual)
+    
+    // Logical operators
+    var andResult = true && false
+    var orResult = true || false
+    var notResult = !true
+    
+    println(andResult)
+    println(orResult)
+    println(notResult)
+    
+    println("All tests completed!")
+}

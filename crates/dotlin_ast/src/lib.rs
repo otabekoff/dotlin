@@ -114,6 +114,7 @@ pub enum Literal {
     Float(f64),
     String(String),
     Boolean(bool),
+    Char(char),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -122,6 +123,10 @@ pub enum BinaryOp {
     Sub,
     Mul,
     Div,
+    PlusEqual,
+    MinusEqual,
+    StarEqual,
+    SlashEqual,
     Equal,
     NotEqual,
     Less,
@@ -136,4 +141,6 @@ pub enum BinaryOp {
 pub enum UnaryOp {
     Not,
     Minus,
+    Increment,
+    Decrement,
 }

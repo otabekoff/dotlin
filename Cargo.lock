@@ -390,6 +390,7 @@ dependencies = [
  "clap",
  "dotlin_ast",
  "dotlin_codegen",
+ "dotlin_interpreter",
  "dotlin_lexer",
  "dotlin_parser",
  "dotlin_typechecker",

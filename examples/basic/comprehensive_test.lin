@@ -1,0 +1,53 @@
+// Comprehensive test of Dotlin features
+fun main() {
+    // Test character literals
+    var charA = 'A'
+    var charB = 'B'
+    println("Character test: " + charA + ", " + charB)
+    
+    // Test float operations
+    var pi = 3.14159
+    var radius = 2.5
+    var area = pi * radius * radius
+    println("Circle area: " + area)
+    
+    // Test string indexing
+    var greeting = "Hello"
+    var firstChar = greeting[0]  // Should be 'H'
+    var middleChar = greeting[2] // Should be 'l'
+    println("String indexing: " + firstChar + " and " + middleChar)
+    
+    // Test compound assignment operators
+    var num = 10
+    num += 5
+    println("After +=: " + num)
+    num -= 3
+    println("After -=: " + num)
+    num *= 2
+    println("After *=: " + num)
+    num /= 4
+    println("After /=: " + num)
+    
+    // Test logical operators with short-circuit
+    var result1 = false && println("This should not print")
+    var result2 = true || println("This should not print")
+    println("Short-circuit results: " + result1 + ", " + result2)
+    
+    // Test arrays
+    var numbers = [1, 2, 3, 4, 5]
+    var first = numbers[0]
+    println("Array first element: " + first)
+    
+    // Test HashMaps
+    var map = {"name": "Dotlin", "version": 2025}
+    var name = map["name"]
+    println("HashMap value: " + name)
+    
+    // Test various operations together
+    var floatNum = 10.5
+    var intNum = 5
+    var mixedResult = floatNum + intNum
+    println("Mixed type operation: " + mixedResult)
+    
+    println("All features working together successfully!")
+}

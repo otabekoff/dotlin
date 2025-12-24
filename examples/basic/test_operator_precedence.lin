@@ -1,0 +1,17 @@
+fun main() {
+    // Test operator precedence: && should have higher precedence than ||
+    // So true || false && false should be parsed as true || (false && false)
+    var result1 = true || false && false
+    println("true || false && false = " + result1)  // Should be true
+    
+    // This should be parsed as (true || false) && false if precedence was equal
+    // But with correct precedence it's true || (false && false) = true || false = true
+    var result2 = false || true && false
+    println("false || true && false = " + result2)  // Should be false
+    
+    // More complex example
+    var result3 = true && true || false && false
+    println("true && true || false && false = " + result3)  // Should be true
+    
+    println("Operator precedence test completed!")
+}
