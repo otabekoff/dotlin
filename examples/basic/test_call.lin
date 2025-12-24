@@ -1,0 +1,9 @@
+fun add(a: Int, b: Int): Int {
+    return a + b
+}
+
+fun main() {
+    println("Adding 10 and 20:")
+    var x = add(10, 20)
+    println(x)
+}

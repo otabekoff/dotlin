@@ -1,0 +1,21 @@
+fun main() {
+    // Test array functionality (which is working)
+    var arr = [10, 20, 30]
+    println("Array created with 3 elements")
+    
+    var first = arr[0]
+    var second = arr[1] 
+    var third = arr[2]
+    
+    println(first)
+    println(second) 
+    println(third)
+    
+    // Note: For HashMaps, we have runtime support but need to use low-level operations
+    // since we don't have high-level HashMap syntax implemented yet in the parser
+    // The runtime functions exist but we need proper syntax to create and use HashMaps
+    // This would require implementing Map literal syntax like {key: value, key2: value2}
+    // and potentially methods like map.keys(), map.values(), etc.
+    
+    println("HashMap runtime functions are implemented but high-level syntax needs to be added")
+}

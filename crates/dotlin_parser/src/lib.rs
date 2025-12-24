@@ -115,11 +115,48 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_type(&mut self) -> Result<Type, ParseError> {
-        match self.advance() {
-            Some(Token::Identifier(id)) => Ok(Type::Named(id)),
-            Some(t) => Err(ParseError::UnexpectedToken(t)),
-            None => Err(ParseError::UnexpectedEOF),
+        let base_type = match self.advance() {
+            Some(Token::Identifier(id)) => {
+                if id == "Array" {
+                    // Parse Array<T> syntax
+                    if self.peek() == Some(&Token::Less) {
+                        self.advance(); // consume <
+                        let element_type = self.parse_type()?;
+                        self.expect(Token::Greater)?;
+                        return Ok(Type::Array(Box::new(element_type)));
+                    } else {
+                        // Just a regular identifier
+                        Type::Named(id)
+                    }
+                } else if id == "Map" {
+                    // Parse Map<K, V> syntax
+                    if self.peek() == Some(&Token::Less) {
+                        self.advance(); // consume <
+                        let key_type = self.parse_type()?;
+                        self.expect(Token::Comma)?;
+                        let value_type = self.parse_type()?;
+                        self.expect(Token::Greater)?;
+                        return Ok(Type::Map(Box::new(key_type), Box::new(value_type)));
+                    } else {
+                        // Just a regular identifier
+                        Type::Named(id)
+                    }
+                } else {
+                    Type::Named(id)
+                }
+            }
+            Some(t) => return Err(ParseError::UnexpectedToken(t)),
+            None => return Err(ParseError::UnexpectedEOF),
+        };
+        
+        // Check for array syntax like Int[]
+        if self.peek() == Some(&Token::LBracket) {
+            self.advance(); // consume [
+            self.expect(Token::RBracket)?; // expect and consume ]
+            return Ok(Type::Array(Box::new(base_type)));
         }
+        
+        Ok(base_type)
     }
 
     fn parse_block(&mut self) -> Result<Block, ParseError> {
@@ -387,6 +424,16 @@ impl<'a> Parser<'a> {
                         member,
                     });
                 }
+                Token::LBracket => {
+                    // Parse array/map indexing: expr[expr]
+                    self.advance(); // consume [
+                    let index = self.parse_expression()?;
+                    self.expect(Token::RBracket)?;
+                    expr = Expression::new(ExpressionKind::Index {
+                        array: expr,
+                        index,
+                    });
+                }
                 _ => break,
             }
         }
@@ -420,6 +467,42 @@ impl<'a> Parser<'a> {
                 let expr = self.parse_expression()?;
                 self.expect(Token::RParen)?;
                 Ok(expr)
+            }
+            Some(Token::LBracket) => {
+                // Parse array literal: [expr, expr, ...]
+                let mut elements = Vec::new();
+                if self.peek() != Some(&Token::RBracket) {
+                    loop {
+                        elements.push(self.parse_expression()?);
+                        if self.peek() == Some(&Token::Comma) {
+                            self.advance();
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                self.expect(Token::RBracket)?;
+                Ok(Expression::new(ExpressionKind::ArrayLiteral { elements }))
+            }
+            Some(Token::LBrace) => {
+                // Parse HashMap literal: {key: value, key2: value2, ...}
+                let mut pairs = Vec::new();
+                if self.peek() != Some(&Token::RBrace) {
+                    loop {
+                        let key = self.parse_expression()?;
+                        self.expect(Token::Colon)?; // Expect colon between key and value
+                        let value = self.parse_expression()?;
+                        pairs.push((key, value));
+                        
+                        if self.peek() == Some(&Token::Comma) {
+                            self.advance();
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                self.expect(Token::RBrace)?;
+                Ok(Expression::new(ExpressionKind::HashMapLiteral { pairs }))
             }
             Some(t) => Err(ParseError::UnexpectedToken(t)),
             None => Err(ParseError::UnexpectedEOF),

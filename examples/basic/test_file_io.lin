@@ -1,0 +1,41 @@
+fun main() {
+    // Test fileExists function
+    var exists = fileExists("test_input.txt")
+    if (exists) {
+        println("File exists before write")
+    } else {
+        println("File does not exist before write")
+    }
+    
+    // Test writeFile function
+    var write_result = writeFile("test_input.txt", "Hello, Dotlin File I/O!")
+    if (write_result == 0) {
+        println("File written successfully")
+    } else {
+        println("File write failed")
+    }
+    
+    // Test fileExists again
+    exists = fileExists("test_input.txt")
+    if (exists) {
+        println("File exists after write")
+    } else {
+        println("File does not exist after write")
+    }
+    
+    // Test readFile function
+    var content = readFile("test_input.txt")
+    println("File content: " + content)
+    
+    // Test appendFile function
+    var append_result = appendFile("test_input.txt", " Appended text.")
+    if (append_result == 0) {
+        println("File appended successfully")
+    } else {
+        println("File append failed")
+    }
+    
+    // Read the file again to see appended content
+    content = readFile("test_input.txt")
+    println("File content after append: " + content)
+}

@@ -1,0 +1,14 @@
+fun main() {
+    // Test basic functionality
+    var x = 42
+    var pi = 3.14159
+    var greeting = "Hello, Dotlin!"
+    
+    println(x)
+    println(pi)
+    println(greeting)
+    
+    // Test basic operations
+    var result = x * 2
+    println(result)
+}

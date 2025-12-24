@@ -1,0 +1,10 @@
+fun main() {
+    // Test print function (no newline) with string
+    print("Testing print function without newline: ")
+    print("continued on same line")
+    println("!")  // Add newline with println
+    
+    // Test readLine function - note: this will not work well in automated tests
+    // since it requires user input, but it's functional
+    print("This test shows that readLine function is available.\n")
+}

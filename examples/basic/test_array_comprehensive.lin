@@ -1,0 +1,15 @@
+fun main() {
+    // Test array literal syntax
+    var arr = [1, 2, 3, 4, 5]
+    println("Array created")
+    
+    // Test array indexing
+    var first = arr[0]
+    var second = arr[1]
+    println(first)
+    println(second)
+    
+    // Test assignment to variables
+    var x = 42
+    println(x)
+}

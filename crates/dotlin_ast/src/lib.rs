@@ -25,7 +25,9 @@ pub struct Param {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     Named(String),
-    // TODO: Generic types, Function types, etc.
+    Array(Box<Type>),
+    Map(Box<Type>, Box<Type>), // Key-value map type
+    Generic(String, Vec<Type>), // Generic type with type parameters
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -93,6 +95,16 @@ pub enum ExpressionKind {
     MemberAccess {
         object: Expression,
         member: String,
+    },
+    ArrayLiteral {
+        elements: Vec<Expression>,
+    },
+    Index {
+        array: Expression,
+        index: Expression,
+    },
+    HashMapLiteral {
+        pairs: Vec<(Expression, Expression)>, // (key, value) pairs
     },
 }
 

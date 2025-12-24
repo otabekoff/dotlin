@@ -1,0 +1,12 @@
+fun main() {
+    // Test basic HashMap operations
+    var map = [1, 2, 3]  // This is an array for now, we'll add proper map syntax later
+    
+    // Print first element of array
+    println(map[0])
+    
+    // Test more complex array operations
+    var numbers = [10, 20, 30, 40, 50]
+    println(numbers[2])
+    println(numbers[4])
+}

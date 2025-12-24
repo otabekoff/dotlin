@@ -1,0 +1,30 @@
+fun main() {
+    // Test array literal syntax
+    var arr = [1, 2, 3, 4, 5]
+    println("Array created with 5 elements")
+    
+    // Test array indexing
+    var first = arr[0]
+    var second = arr[1]
+    var third = arr[2]
+    println(first)
+    println(second)
+    println(third)
+    
+    // Test assignment to variables
+    var x = 42
+    var pi = 3.14159
+    var greeting = "Hello, Dotlin!"
+    
+    println(x)
+    println(pi)
+    println(greeting)
+    
+    // Test basic operations
+    var result = x * 2
+    println(result)
+    
+    // Test string operations
+    var concat = greeting + " Welcome to arrays!"
+    println(concat.length)
+}

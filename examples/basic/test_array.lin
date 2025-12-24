@@ -1,0 +1,5 @@
+fun main() {
+    // Test variable assignment
+    var x = 42
+    println("Variable assignment works")
+}

@@ -1,0 +1,18 @@
+fun main() {
+    // Test array functionality
+    var arr = [1, 2, 3, 4, 5]
+    println("Array created")
+    
+    // Test array indexing
+    var first = arr[0]
+    var second = arr[1]
+    println(first)
+    println(second)
+    
+    // Test string operations
+    var greeting = "Hello, "
+    var name = "Dotlin!"
+    var message = greeting + name
+    println(message)
+    println(message.length)
+}

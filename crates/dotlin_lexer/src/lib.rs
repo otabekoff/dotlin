@@ -48,6 +48,10 @@ pub enum Token {
     LBrace,
     #[token("}")]
     RBrace,
+    #[token("[")]
+    LBracket,
+    #[token("]")]
+    RBracket,
     #[token(",")]
     Comma,
     #[token(":")]
@@ -68,10 +72,10 @@ pub enum Token {
     NotEqual,
     #[token("<")]
     Less,
-    #[token("<=")]
-    LessEqual,
     #[token(">")]
     Greater,
+    #[token("<=")]
+    LessEqual,
     #[token(">=")]
     GreaterEqual,
     #[token("!")]

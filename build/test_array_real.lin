@@ -1,0 +1,11 @@
+fun main() {
+    // Test array creation and indexing
+    var arr = [10, 20, 30]
+    println(arr[0])  // Should print 10
+    println(arr[1])  // Should print 20
+    println(arr[2])  // Should print 30
+    
+    // Test with different values
+    var nums = [5, 15, 25, 35]
+    println(nums[3])  // Should print 35
+}

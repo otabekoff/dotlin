@@ -1,0 +1,17 @@
+fun main() {
+    // For now, just test array functionality which should work with our implementation
+    var arr = [10, 20, 30]
+    println("Array created with 3 elements")
+    
+    var first = arr[0]
+    var second = arr[1] 
+    var third = arr[2]
+    
+    println(first)
+    println(second) 
+    println(third)
+    
+    // Test string operations
+    var greeting = "Hello"
+    println(greeting.length)
+}

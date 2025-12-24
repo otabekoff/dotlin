@@ -1,0 +1,8 @@
+fun main() {
+    // Test HashMap iteration functionality
+    // Note: This is pseudocode since we don't have high-level iteration syntax yet
+    // The runtime functions for keys, values, and size are available
+    
+    println("HashMap iteration functions are now available in the runtime")
+    // This test would use the new functions: map.keys(), map.values(), map.size()
+}

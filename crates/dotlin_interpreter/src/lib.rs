@@ -329,6 +329,36 @@ impl Interpreter {
                     ))),
                 }
             }
+            ExpressionKind::ArrayLiteral { elements } => {
+                let mut values = Vec::new();
+                for element in elements {
+                    values.push(self.evaluate_expression(element, env.clone())?);
+                }
+                // For now, we'll represent arrays as a custom Value variant
+                // Since we don't have arrays in the Value enum yet, we'll need to add that
+                // For now, let's create a custom value to represent arrays
+                Ok(Value::String(format!("Array({} elements)", values.len()))) // Placeholder
+            }
+            ExpressionKind::Index { array: _, index } => {
+                let idx_val = self.evaluate_expression(index, env)?;
+                
+                // For now, this is a placeholder implementation
+                // We'll need to properly handle array and map indexing
+                match idx_val {
+                    Value::Integer(i) => {
+                        // Array indexing with integer index
+                        Ok(Value::Integer(i)) // Placeholder
+                    }
+                    _ => Err(RuntimeError::TypeMismatch(
+                        "Index must be an integer".to_string(),
+                    )),
+                }
+            }
+            ExpressionKind::HashMapLiteral { pairs } => {
+                // For now, we'll represent HashMap as a string description
+                // Since we don't have a proper HashMap value type yet
+                Ok(Value::String(format!("HashMap({} entries)", pairs.len()))) // Placeholder
+            }
         }
     }
 

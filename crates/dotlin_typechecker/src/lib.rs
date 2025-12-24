@@ -281,6 +281,92 @@ impl TypeChecker {
                     });
                 }
             }
+            ExpressionKind::ArrayLiteral { elements } => {
+                if elements.is_empty() {
+                    // Default to Int array for empty arrays
+                    Type::Array(Box::new(Type::Named("Int".to_string())))
+                } else {
+                    let first_elem_type = self.check_expression(&mut elements[0])?;
+                    for element in elements.iter_mut().skip(1) {
+                        let elem_type = self.check_expression(element)?;
+                        if elem_type != first_elem_type {
+                            return Err(TypeError::Mismatch {
+                                expected: first_elem_type.clone(),
+                                found: elem_type,
+                            });
+                        }
+                    }
+                    Type::Array(Box::new(first_elem_type))
+                }
+            }
+            ExpressionKind::Index { array, index } => {
+                let arr_typ = self.check_expression(array)?;
+                let idx_typ = self.check_expression(index)?;
+                
+                match &arr_typ {
+                    Type::Array(element_type) => {
+                        // Array indexing: index must be Int
+                        if idx_typ != Type::Named("Int".to_string()) {
+                            return Err(TypeError::Mismatch {
+                                expected: Type::Named("Int".to_string()),
+                                found: idx_typ,
+                            });
+                        }
+                        *element_type.clone()
+                    }
+                    Type::Map(key_type, value_type) => {
+                        // HashMap indexing: key type must match map's key type
+                        if idx_typ != **key_type {
+                            return Err(TypeError::Mismatch {
+                                expected: key_type.as_ref().clone(),
+                                found: idx_typ,
+                            });
+                        }
+                        *value_type.clone()
+                    }
+                    _ => {
+                        return Err(TypeError::UndefinedMember {
+                            typ: arr_typ,
+                            member: "index".to_string(),
+                        });
+                    }
+                }
+            }
+            ExpressionKind::HashMapLiteral { pairs } => {
+                if pairs.is_empty() {
+                    // Default to Map<String, Int> for empty HashMap literals
+                    Type::Map(
+                        Box::new(Type::Named("String".to_string())),
+                        Box::new(Type::Named("Int".to_string())),
+                    )
+                } else {
+                    // Determine key and value types from the first pair
+                    let (first_key, first_val) = &mut pairs[0];
+                    let key_type = self.check_expression(first_key)?;
+                    let value_type = self.check_expression(first_val)?;
+                    
+                    // Check that all other pairs have consistent types
+                    for (key, val) in pairs.iter_mut().skip(1) {
+                        let k_type = self.check_expression(key)?;
+                        let v_type = self.check_expression(val)?;
+                        
+                        if k_type != key_type {
+                            return Err(TypeError::Mismatch {
+                                expected: key_type.clone(),
+                                found: k_type,
+                            });
+                        }
+                        if v_type != value_type {
+                            return Err(TypeError::Mismatch {
+                                expected: value_type.clone(),
+                                found: v_type,
+                            });
+                        }
+                    }
+                    
+                    Type::Map(Box::new(key_type), Box::new(value_type))
+                }
+            }
         };
         expr.resolved_type = Some(typ.clone());
         Ok(typ)
