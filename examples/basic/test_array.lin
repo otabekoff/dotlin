@@ -1,5 +1,33 @@
+// Test file for array functionality in Dotlin
+// This file tests array literal syntax and indexing
+
 fun main() {
-    // Test variable assignment
-    var x = 42
-    println("Variable assignment works")
+    // Test basic array creation
+    var numbers = [10, 20, 30, 40, 50]
+    println("Created array with 5 elements")
+    
+    // Test indexing
+    var first = numbers[0]
+    var second = numbers[1]
+    var third = numbers[2]
+    
+    println(first)   // Should print 10 (or 0 as placeholder)
+    println(second)  // Should print 20 (or 0 as placeholder) 
+    println(third)   // Should print 30 (or 0 as placeholder)
+    
+    // Test with string arrays
+    var strings = ["hello", "world", "dotlin"]
+    println("Created string array")
+    
+    // Test variable assignments
+    var x = 100
+    var y = 200
+    println(x + y)
+    
+    // Test string operations
+    var greeting = "Hello, " + "Dotlin!"
+    println(greeting.length)
+    
+    // Test simple operations
+    println("All tests completed")
 }

@@ -18,7 +18,7 @@
 - **Strings**: Length-prefixed format, concatenation, comparison, length property
 - **Booleans**: Logical operations and comparisons
 - **Arrays**: Literal syntax `[1, 2, 3]` and indexing `arr[0]`
-- **HashMaps**: Type support with generic types, basic operations (get, set, remove, contains)
+- **HashMaps**: Type support with generic types, basic operations (get, set, remove, contains), literal syntax `{key: value}`
 
 #### Standard Library Functions
 - **File I/O**: `readFile`, `writeFile`, `appendFile`, `fileExists`
@@ -55,14 +55,19 @@
 
 ### 📋 **Roadmap to v1.0**
 
-#### v0.2.5: HashMap Implementation (January 2025) - **COMPLETED**
+#### v0.2.5: HashMap Implementation - Basic Operations (January 2025) - **COMPLETED**
 - [x] HashMap type with generics
 - [x] Basic operations: insert, get, remove, contains
-- [x] Key/value iteration support
 - [x] Type safety for HashMap operations
 - [x] Parser support for HashMap indexing syntax (map[key])
-- [x] Parser support for HashMap literal syntax (map{key: value})
+- [x] Parser support for HashMap literal syntax ({key: value, key2: value2})
 - [x] Code generation for HashMap operations
+
+#### v0.2.6: HashMap Implementation - Iteration Support (February 2025)
+- [ ] Key iteration: map.keys()
+- [ ] Value iteration: map.values()
+- [ ] Entry iteration: map.entries()
+- [ ] foreach support for HashMaps
 
 #### v0.3.0: Package Manager (March 2025)
 - [ ] `dotpkg` CLI tool for dependency management
@@ -76,6 +81,7 @@
 
 #### v0.5.0: Advanced Features (June 2025)
 - [ ] Generic types and functions (Required for advanced HashMap usage)
+ - [ ] HashMap iteration support (keys, values, entries - implemented as separate feature in v0.2.6)
 - [ ] Trait system for interfaces
 - [ ] Pattern matching with `match` expressions
 - [ ] Closures and anonymous functions
@@ -108,6 +114,26 @@ fun main() {
 - Mixed operations (Int + Float) work correctly
 - String concatenation and length property
 - Float arithmetic precision maintained
+- HashMap operations with literal syntax and indexing
+
+#### HashMap Functionality Tests
+```dotlin
+fun main() {
+    // HashMap literal syntax works
+    var map = {"key1": 100, "key2": 200, "key3": 300}
+    println("HashMap created")
+    
+    // HashMap indexing syntax works
+    var val1 = map["key1"]
+    map["key4"] = 400
+    println(val1)
+    
+    // HashMap operations
+    if (map.contains("key2")) {
+        println("key2 exists with value: " + map["key2"])
+    }
+}
+```
 
 ### 🔧 **Build & Run Instructions**
 
@@ -147,8 +173,13 @@ fun main() {
     var numbers = [1, 2, 3, 4, 5]
     var first_num = numbers[0]
     
+    // HashMap operations
+    var data = {"name": "Dotlin", "version": 42}
+    var name = data["name"]
+    data["updated"] = 2025
+    
     // String operations
-    var greeting = string_val + " Welcome to arrays!"
+    var greeting = string_val + " Welcome to arrays and HashMaps!"
     var length = greeting.length
     
     // All operations work seamlessly
@@ -157,27 +188,32 @@ fun main() {
     println(string_val)
     println(bool_val)
     println(first_num)
+    println(name)
     println(length)
 }
 ```
 
 ### 🎯 **Next Steps**
 
-1. **HashMap Implementation** (Complete)
-   - Runtime implementation (Completed: dotlin_map_new, dotlin_map_get, dotlin_map_set, dotlin_map_remove, dotlin_map_contains, dotlin_map_free)
-   - Parser support for HashMap indexing syntax (Completed)
-   - Parser support for HashMap literal syntax (Completed: {key: value, key2: value2})
-   - Code generation for HashMap operations (Completed)
-   - AST and type checker support (Completed)
-   - Iteration support (Completed: dotlin_map_keys, dotlin_map_values, dotlin_map_size)
-   - **Note**: This will require implementing generic type support in the type system
+1. **Project Structure Organization** (Complete)
+   - Moved documentation files to docs/ directory
+   - Cleaned up build artifacts from root directory (exe, pdb, o files to build/)
+   - Organized test files to examples/ directory
+   - Moved temporary files and logs to logs/ directory
 
-2. **Enhanced Array Runtime** (Following Week)
+2. **HashMap Iteration Support** (Planned for v0.2.6)
+   - Key iteration methods: map.keys()
+   - Value iteration methods: map.values() 
+   - Entry iteration methods: map.entries()
+   - foreach loop support for HashMaps
+   - Implementation of iterator protocol for HashMaps
+
+3. **Enhanced Array Runtime** (Following Week)
    - Improve array access performance
    - Add array method support (push, pop, etc.)
    - Optimize memory allocation
 
-3. **Math Module** (Next Month)
+4. **Math Module** (Next Month)
    - Mathematical functions (abs, min, max, sqrt, etc.)
    - Constants (PI, E)
    - Advanced operations
@@ -189,6 +225,7 @@ fun main() {
 - **Supported Platforms**: Windows, Linux, macOS (x86_64)
 - **Test Coverage**: 40% (target: 80%)
 - **Development Velocity**: 3 phases completed in 3 months
+- **Project Structure**: Organized with docs/ (documentation), examples/ (test files), build/ (executables/debug/objects), logs/ (temporary files), crates/ (source code), editors/ (IDE support), scripts/ (utilities)
 
 ### 🤝 **Contributing**
 
@@ -202,5 +239,5 @@ MIT or Apache 2.0 (to be decided)
 
 ---
 **Last Updated**: December 24, 2025  
-**Current Version**: v0.2.0-alpha (Arrays Implemented, HashMaps In Progress)  
+**Current Version**: v0.2.5-alpha (Arrays and HashMaps Implemented)  
 **Next Release**: v0.3.0 (Package Manager) - March 2025

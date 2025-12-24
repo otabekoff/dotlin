@@ -1,5 +1,0 @@
-fun main() {
-    var x = 10
-    var s = "hello"
-    var result = x + s
-}

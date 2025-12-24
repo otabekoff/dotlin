@@ -1,7 +1,0 @@
-fun main() {
-    println("Testing HashMap functionality")
-    
-    // Note: This is a low-level test that uses the runtime functions directly
-    // Higher-level syntax will be implemented later
-    println("HashMap tests completed successfully")
-}

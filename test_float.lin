@@ -1,7 +1,0 @@
-fun main() {
-    var x = 10.5
-    var y = 2.0
-    var z = x + y
-    println("Result of 10.5 + 2.0:")
-    println(z)
-}
