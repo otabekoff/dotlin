@@ -16,6 +16,8 @@ pub enum Value {
     },
     // Built-in functions later?
     NativeFunction(fn(Vec<Value>) -> Result<Value, RuntimeError>),
+    Array(Vec<Value>),
+    HashMap(std::collections::HashMap<String, Value>),
 }
 
 impl PartialEq for Value {
@@ -43,6 +45,8 @@ impl PartialEq for Value {
                 // Or just cast to usize.
                 *f1 as usize == *f2 as usize
             }
+            (Value::Array(a1), Value::Array(a2)) => a1 == a2,
+            (Value::HashMap(m1), Value::HashMap(m2)) => m1 == m2,
             _ => false,
         }
     }
@@ -58,6 +62,25 @@ impl std::fmt::Display for Value {
             Value::Void => write!(f, "()"),
             Value::Function { declaration, .. } => write!(f, "fun {}", declaration.name),
             Value::NativeFunction(_) => write!(f, "<native fn>"),
+            Value::Array(elements) => {
+                write!(f, "Array(")?;
+                for (i, element) in elements.iter().enumerate() {
+                    if i > 0 { write!(f, ", ")?; }
+                    write!(f, "{}", element)?;
+                }
+                write!(f, ")")
+            },
+            Value::HashMap(map) => {
+                write!(f, "HashMap(")?;
+                let mut iter = map.iter().enumerate();
+                if let Some((_i, (key, value))) = iter.next() {
+                    write!(f, "{}: {}", key, value)?;
+                    for (_i, (key, value)) in iter {
+                        write!(f, ", {}: {}", key, value)?;
+                    }
+                }
+                write!(f, ")")
+            },
         }
     }
 }
@@ -334,30 +357,70 @@ impl Interpreter {
                 for element in elements {
                     values.push(self.evaluate_expression(element, env.clone())?);
                 }
-                // For now, we'll represent arrays as a custom Value variant
-                // Since we don't have arrays in the Value enum yet, we'll need to add that
-                // For now, let's create a custom value to represent arrays
-                Ok(Value::String(format!("Array({} elements)", values.len()))) // Placeholder
+                Ok(Value::Array(values))
             }
-            ExpressionKind::Index { array: _, index } => {
+            ExpressionKind::Index { array, index } => {
+                let arr_val = self.evaluate_expression(array, env.clone())?;
                 let idx_val = self.evaluate_expression(index, env)?;
                 
-                // For now, this is a placeholder implementation
-                // We'll need to properly handle array and map indexing
-                match idx_val {
-                    Value::Integer(i) => {
-                        // Array indexing with integer index
-                        Ok(Value::Integer(i)) // Placeholder
+                match (arr_val, idx_val) {
+                    (Value::Array(elements), Value::Integer(index)) => {
+                        let idx = index as usize;
+                        if idx < elements.len() {
+                            Ok(elements[idx].clone())
+                        } else {
+                            Err(RuntimeError::TypeMismatch(
+                                "Array index out of bounds".to_string(),
+                            ))
+                        }
+                    }
+                    (Value::HashMap(map), Value::String(key)) => {
+                        match map.get(&key) {
+                            Some(value) => Ok(value.clone()),
+                            None => Err(RuntimeError::TypeMismatch(
+                                format!("Key '{}' not found in HashMap", key),
+                            )),
+                        }
+                    }
+                    (Value::HashMap(map), Value::Integer(key)) => {
+                        match map.get(&key.to_string()) {
+                            Some(value) => Ok(value.clone()),
+                            None => Err(RuntimeError::TypeMismatch(
+                                format!("Key '{}' not found in HashMap", key),
+                            )),
+                        }
+                    }
+                    (_, Value::Integer(_)) => {
+                        Err(RuntimeError::TypeMismatch(
+                            "Indexing target is not an array".to_string(),
+                        ))
+                    }
+                    (_, Value::String(_)) => {
+                        Err(RuntimeError::TypeMismatch(
+                            "Indexing target is not a HashMap".to_string(),
+                        ))
                     }
                     _ => Err(RuntimeError::TypeMismatch(
-                        "Index must be an integer".to_string(),
+                        "Index must be an integer for arrays or string for HashMaps".to_string(),
                     )),
                 }
             }
             ExpressionKind::HashMapLiteral { pairs } => {
-                // For now, we'll represent HashMap as a string description
-                // Since we don't have a proper HashMap value type yet
-                Ok(Value::String(format!("HashMap({} entries)", pairs.len()))) // Placeholder
+                let mut map = std::collections::HashMap::new();
+                for (key_expr, value_expr) in pairs {
+                    let key = self.evaluate_expression(key_expr, env.clone())?;
+                    let value = self.evaluate_expression(value_expr, env.clone())?;
+                    
+                    // Convert key to string if it's a string literal
+                    let key_str = match key {
+                        Value::String(s) => s,
+                        Value::Integer(i) => i.to_string(),
+                        _ => return Err(RuntimeError::TypeMismatch("HashMap key must be string or integer".to_string())),
+                    };
+                    
+                    map.insert(key_str, value);
+                }
+                Ok(Value::HashMap(map))
             }
         }
     }
@@ -430,14 +493,38 @@ impl Interpreter {
                 Ok(Value::Boolean(l >= r))
             }
 
-            // Boolean equality
+            // Boolean operations
             (Value::Boolean(l), BinaryOp::Equal, Value::Boolean(r)) => Ok(Value::Boolean(l == r)),
             (Value::Boolean(l), BinaryOp::NotEqual, Value::Boolean(r)) => {
                 Ok(Value::Boolean(l != r))
             }
+            (Value::Boolean(l), BinaryOp::And, Value::Boolean(r)) => {
+                Ok(Value::Boolean(l && r))
+            }
+            (Value::Boolean(l), BinaryOp::Or, Value::Boolean(r)) => {
+                Ok(Value::Boolean(l || r))
+            }
 
             // String concat
             (Value::String(l), BinaryOp::Add, Value::String(r)) => {
+                Ok(Value::String(format!("{}{}", l, r)))
+            }
+            (Value::String(l), BinaryOp::Add, Value::Integer(r)) => {
+                Ok(Value::String(format!("{}{}", l, r)))
+            }
+            (Value::Integer(l), BinaryOp::Add, Value::String(r)) => {
+                Ok(Value::String(format!("{}{}", l, r)))
+            }
+            (Value::String(l), BinaryOp::Add, Value::Float(r)) => {
+                Ok(Value::String(format!("{}{}", l, r)))
+            }
+            (Value::Float(l), BinaryOp::Add, Value::String(r)) => {
+                Ok(Value::String(format!("{}{}", l, r)))
+            }
+            (Value::String(l), BinaryOp::Add, Value::Boolean(r)) => {
+                Ok(Value::String(format!("{}{}", l, r)))
+            }
+            (Value::Boolean(l), BinaryOp::Add, Value::String(r)) => {
                 Ok(Value::String(format!("{}{}", l, r)))
             }
             _ => Err(RuntimeError::TypeMismatch(

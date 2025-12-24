@@ -208,6 +208,21 @@ impl TypeChecker {
                         }
                         Type::Named("Boolean".to_string())
                     }
+                    BinaryOp::And | BinaryOp::Or => {
+                        if lt != Type::Named("Boolean".to_string()) {
+                            return Err(TypeError::Mismatch {
+                                expected: Type::Named("Boolean".to_string()),
+                                found: lt,
+                            });
+                        }
+                        if rt != Type::Named("Boolean".to_string()) {
+                            return Err(TypeError::Mismatch {
+                                expected: Type::Named("Boolean".to_string()),
+                                found: rt,
+                            });
+                        }
+                        Type::Named("Boolean".to_string())
+                    }
                 }
             }
             ExpressionKind::Unary { operator, operand } => {

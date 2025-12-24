@@ -70,6 +70,10 @@ pub enum Token {
     DoubleEqual,
     #[token("!=")]
     NotEqual,
+    #[token("&&")]
+    And,
+    #[token("||")]
+    Or,
     #[token("<")]
     Less,
     #[token(">")]

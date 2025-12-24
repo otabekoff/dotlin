@@ -16,7 +16,7 @@
 - **Integers**: Full arithmetic and comparison operations
 - **Floats**: 64-bit floating-point with arithmetic and comparisons
 - **Strings**: Length-prefixed format, concatenation, comparison, length property
-- **Booleans**: Logical operations and comparisons
+- **Booleans**: Logical operations (`&&`, `||`) and comparisons
 - **Arrays**: Literal syntax `[1, 2, 3]` and indexing `arr[0]`
 - **HashMaps**: Type support with generic types, basic operations (get, set, remove, contains), literal syntax `{key: value}`
 
@@ -68,6 +68,12 @@
 - [ ] Value iteration: map.values()
 - [ ] Entry iteration: map.entries()
 - [ ] foreach support for HashMaps
+
+#### v0.2.7: Enhanced Boolean and Logical Operations (March 2025)
+- [ ] Logical AND operator (&&) with short-circuit evaluation
+- [ ] Logical OR operator (||) with short-circuit evaluation
+- [ ] Boolean coercion in conditional contexts
+- [ ] Boolean operator precedence and associativity
 
 #### v0.3.0: Package Manager (March 2025)
 - [ ] `dotpkg` CLI tool for dependency management

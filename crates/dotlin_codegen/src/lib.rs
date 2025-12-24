@@ -558,7 +558,11 @@ impl CodeGenerator {
                             BinaryOp::LessEqual => IntCC::SignedLessThanOrEqual,
                             BinaryOp::Greater => IntCC::SignedGreaterThan,
                             BinaryOp::GreaterEqual => IntCC::SignedGreaterThanOrEqual,
-                            _ => IntCC::Equal,
+                            _ => {
+                                // For now, we'll handle boolean operations at runtime
+                                // This requires more complex logic to handle short-circuiting
+                                return Err(CompileError::UndefinedVariable("Boolean operators not supported in this context".to_string()));
+                            }
                         };
                         let cmp_val = builder.ins().icmp(cond, res, zero);
                         return Ok((cmp_val, DotlinType::Boolean));
@@ -579,6 +583,11 @@ impl CodeGenerator {
                         BinaryOp::GreaterEqual => {
                             builder.ins().fcmp(FloatCC::GreaterThanOrEqual, l, r)
                         }
+                        BinaryOp::And | BinaryOp::Or => {
+                            // For now, we'll handle boolean operations at runtime
+                            // This requires more complex logic to handle short-circuiting
+                            return Err(CompileError::UndefinedVariable("Boolean operators not supported in this context".to_string()));
+                        }
                     };
                     let out_dt = match operator {
                         BinaryOp::Equal
@@ -586,7 +595,9 @@ impl CodeGenerator {
                         | BinaryOp::Less
                         | BinaryOp::LessEqual
                         | BinaryOp::Greater
-                        | BinaryOp::GreaterEqual => DotlinType::Boolean,
+                        | BinaryOp::GreaterEqual
+                        | BinaryOp::And
+                        | BinaryOp::Or => DotlinType::Boolean,
                         _ => DotlinType::Float,
                     };
                     Ok((res, out_dt))
@@ -606,6 +617,11 @@ impl CodeGenerator {
                         BinaryOp::GreaterEqual => {
                             builder.ins().icmp(IntCC::SignedGreaterThanOrEqual, l, r)
                         }
+                        BinaryOp::And | BinaryOp::Or => {
+                            // For now, we'll handle boolean operations at runtime
+                            // This requires more complex logic to handle short-circuiting
+                            return Err(CompileError::UndefinedVariable("Boolean operators not supported in this context".to_string()));
+                        }
                     };
                     let out_dt = match operator {
                         BinaryOp::Equal
@@ -613,7 +629,9 @@ impl CodeGenerator {
                         | BinaryOp::Less
                         | BinaryOp::LessEqual
                         | BinaryOp::Greater
-                        | BinaryOp::GreaterEqual => DotlinType::Boolean,
+                        | BinaryOp::GreaterEqual
+                        | BinaryOp::And
+                        | BinaryOp::Or => DotlinType::Boolean,
                         _ => DotlinType::Int,
                     };
                     Ok((res, out_dt))

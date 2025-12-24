@@ -257,7 +257,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression(&mut self) -> Result<Expression, ParseError> {
-        let expr = self.parse_equality()?;
+        let expr = self.parse_logical_or()?;
 
         if self.peek() == Some(&Token::Equal) {
             self.advance();
@@ -284,6 +284,50 @@ impl<'a> Parser<'a> {
                         _ => unreachable!(),
                     };
                     let right = self.parse_comparison()?;
+                    expr = Expression::new(ExpressionKind::Binary {
+                        left: expr,
+                        operator: op,
+                        right,
+                    });
+                }
+                _ => break,
+            }
+        }
+        Ok(expr)
+    }
+
+    fn parse_logical_and(&mut self) -> Result<Expression, ParseError> {
+        let mut expr = self.parse_equality()?;
+        while let Some(token) = self.peek() {
+            match token {
+                Token::And => {
+                    let op = match self.advance().unwrap() {
+                        Token::And => BinaryOp::And,
+                        _ => unreachable!(),
+                    };
+                    let right = self.parse_equality()?;
+                    expr = Expression::new(ExpressionKind::Binary {
+                        left: expr,
+                        operator: op,
+                        right,
+                    });
+                }
+                _ => break,
+            }
+        }
+        Ok(expr)
+    }
+
+    fn parse_logical_or(&mut self) -> Result<Expression, ParseError> {
+        let mut expr = self.parse_logical_and()?;
+        while let Some(token) = self.peek() {
+            match token {
+                Token::Or => {
+                    let op = match self.advance().unwrap() {
+                        Token::Or => BinaryOp::Or,
+                        _ => unreachable!(),
+                    };
+                    let right = self.parse_logical_and()?;
                     expr = Expression::new(ExpressionKind::Binary {
                         left: expr,
                         operator: op,
