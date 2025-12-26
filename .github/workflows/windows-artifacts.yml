@@ -42,12 +42,15 @@ jobs:
           CC: x86_64-w64-mingw32-gcc
           CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER: x86_64-w64-mingw32-gcc
           PKG_CONFIG_PATH: /mingw64/lib/pkgconfig
+          RUSTC_WRAPPER: ""
         run: |
           rustup target add x86_64-pc-windows-gnu || true
           cargo build -p dotlin_runtime --release --target x86_64-pc-windows-gnu
 
       - name: Build dotlin_runtime (dynamic)
         if: ${{ matrix.variant == 'dynamic' }}
+        env:
+          RUSTC_WRAPPER: ""
         run: cargo build -p dotlin_runtime --release
 
       - name: Show lib directory
