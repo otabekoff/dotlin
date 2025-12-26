@@ -1,7 +1,7 @@
 use clap::Parser;
 use dotlin_codegen::CodeGenerator;
-use dotlin_parser::Parser as DotlinParser;
 use dotlin_interpreter::Interpreter;
+use dotlin_parser::Parser as DotlinParser;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -169,7 +169,6 @@ fn run_with_interpreter(input_path: &PathBuf) {
     match std::fs::read_to_string(input_path) {
         Ok(content) => {
             let mut parser = dotlin_parser::Parser::new(&content);
-            
             match parser.parse_program() {
                 Ok(mut ast) => {
                     // Type check
@@ -178,7 +177,7 @@ fn run_with_interpreter(input_path: &PathBuf) {
                         eprintln!("Type Error: {}", e);
                         return;
                     }
-                    
+
                     // Run with interpreter
                     let mut interpreter = Interpreter::new();
                     match interpreter.interpret_program(&ast) {

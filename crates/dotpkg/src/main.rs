@@ -190,10 +190,12 @@ fn update_dependencies() -> Result<()> {
     if manifest.dependencies.is_empty() {
         println!("No dependencies to update.");
     } else {
-        println!("Checking for updates for {} dependencies:", manifest.dependencies.len());
+        println!(
+            "Checking for updates for {} dependencies:",
+            manifest.dependencies.len()
+        );
         for (name, version) in &manifest.dependencies {
             println!("  - Checking {} (current: {})...", name, version);
-            
             // In a real implementation, we would check for updates and install them
             // For now, we'll just indicate that we checked
             println!("  - {} is up to date", name);
