@@ -343,7 +343,7 @@ pub enum RuntimeError {
     TypeMismatch(String),
     NotAFunction(String),
     ArgumentCount { expected: usize, got: usize },
-    Return(Value),
+    Return(Box<Value>),
 }
 
 impl std::fmt::Display for RuntimeError {
@@ -380,7 +380,6 @@ impl Environment {
             enclosing: Some(enclosing),
         }
     }
-
     pub fn define(&mut self, name: String, value: Value) {
         self.values.insert(name, value);
     }
@@ -396,8 +395,8 @@ impl Environment {
     }
 
     pub fn assign(&mut self, name: String, value: Value) -> Result<(), RuntimeError> {
-        if self.values.contains_key(&name) {
-            self.values.insert(name, value);
+        if let Some(slot) = self.values.get_mut(&name) {
+            *slot = value;
             Ok(())
         } else if let Some(ref enclosing) = self.enclosing {
             enclosing.borrow_mut().assign(name, value)
@@ -405,6 +404,13 @@ impl Environment {
             Err(RuntimeError::UndefinedVariable(name))
         }
     }
+}
+
+impl Default for Environment {
+    fn default() -> Self {
+        Self::new()
+    }
+
 }
 
 pub struct Interpreter {
@@ -563,6 +569,15 @@ impl Interpreter {
         Self { globals }
     }
 
+}
+
+impl Default for Interpreter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Interpreter {
     pub fn interpret_program(&mut self, program: &Program) -> Result<(), RuntimeError> {
         for decl in &program.declarations {
             self.execute_declaration(decl, self.globals.clone())?;
@@ -646,7 +661,7 @@ impl Interpreter {
                 } else {
                     Value::Void
                 };
-                Err(RuntimeError::Return(value))
+                Err(RuntimeError::Return(Box::new(value)))
             }
             Statement::Block(block) => {
                 let new_env = Rc::new(RefCell::new(Environment::with_enclosing(env)));
@@ -1168,7 +1183,7 @@ impl Interpreter {
 
                 match self.execute_block(&declaration.body, environment) {
                     Ok(_) => Ok(Value::Void),
-                    Err(RuntimeError::Return(val)) => Ok(val),
+                    Err(RuntimeError::Return(val)) => Ok(*val),
                     Err(e) => Err(e),
                 }
             }
