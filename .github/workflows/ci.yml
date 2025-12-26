@@ -47,6 +47,8 @@ jobs:
         key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
     
     - name: Run tests
+      env:
+        RUSTC_WRAPPER: ""
       run: cargo test --workspace --verbose
     
     - name: Run clippy
