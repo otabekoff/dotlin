@@ -14,34 +14,35 @@ fn compile_and_run_iter_tuple_example_codegen() {
         // Ensure runtime lib exists before compiling the example (linker requires import lib)
         let lib_dir = workspace_root.join("lib");
         let _lib_import = lib_dir.join("dotlin_runtime.lib");
-        if cfg!(target_os = "windows") {
-            // Use cargo JSON message-format to locate produced artifacts reliably
-            let out = Command::new("cargo")
-                .arg("build")
-                .arg("-p")
-                .arg("dotlin_runtime")
-                .arg("--release")
-                .arg("--message-format=json")
-                .current_dir(workspace_root)
-                .output()
-                .expect("failed to run cargo build for dotlin_runtime");
-            assert!(out.status.success(), "building dotlin_runtime failed");
+            // Build runtime and copy any produced runtime artifacts into workspace `lib/`
+            {
+                let out = Command::new("cargo")
+                    .arg("build")
+                    .arg("-p")
+                    .arg("dotlin_runtime")
+                    .arg("--release")
+                    .arg("--message-format=json")
+                    .current_dir(workspace_root)
+                    .output()
+                    .expect("failed to run cargo build for dotlin_runtime");
+                assert!(out.status.success(), "building dotlin_runtime failed");
 
-            std::fs::create_dir_all(&lib_dir).expect("failed to create lib dir");
-            let mut copied: Vec<String> = Vec::new();
-            let stdout_str = String::from_utf8_lossy(&out.stdout).to_string();
-            for line in stdout_str.lines() {
-                if let Ok(val) = serde_json::from_str::<serde_json::Value>(line) {
-                    if val.get("reason").and_then(|r| r.as_str()) == Some("compiler-artifact") {
-                        if let Some(filenames) = val.get("filenames").and_then(|f| f.as_array()) {
-                            for fname in filenames {
-                                if let Some(path_str) = fname.as_str() {
-                                    let p = std::path::PathBuf::from(path_str);
-                                    if let Some(name) = p.file_name().and_then(|n| n.to_str()) {
-                                        let ln = name.to_ascii_lowercase();
-                                        if ln.contains("dotlin_runtime") && (ln.ends_with(".lib") || ln.ends_with(".dll") ) {
-                                            let _ = std::fs::copy(&p, lib_dir.join(name));
-                                            copied.push(name.to_string());
+                std::fs::create_dir_all(&lib_dir).expect("failed to create lib dir");
+                let mut copied: Vec<String> = Vec::new();
+                let stdout_str = String::from_utf8_lossy(&out.stdout).to_string();
+                for line in stdout_str.lines() {
+                    if let Ok(val) = serde_json::from_str::<serde_json::Value>(line) {
+                        if val.get("reason").and_then(|r| r.as_str()) == Some("compiler-artifact") {
+                            if let Some(filenames) = val.get("filenames").and_then(|f| f.as_array()) {
+                                for fname in filenames {
+                                    if let Some(path_str) = fname.as_str() {
+                                        let p = std::path::PathBuf::from(path_str);
+                                        if let Some(name) = p.file_name().and_then(|n| n.to_str()) {
+                                            let ln = name.to_ascii_lowercase();
+                                            if ln.contains("dotlin_runtime") && (ln.ends_with(".lib") || ln.ends_with(".dll") || ln.ends_with(".a") || ln.ends_with(".dylib")) {
+                                                let _ = std::fs::copy(&p, lib_dir.join(name));
+                                                copied.push(name.to_string());
+                                            }
                                         }
                                     }
                                 }
@@ -49,20 +50,24 @@ fn compile_and_run_iter_tuple_example_codegen() {
                         }
                     }
                 }
-            }
 
-            // If MSVC produced an import named `dotlin_runtime.dll.lib`, normalize it to `dotlin_runtime.lib`
-            let imported = lib_dir.join("dotlin_runtime.lib");
-            if !imported.exists() {
-                let alt = lib_dir.join("dotlin_runtime.dll.lib");
-                if alt.exists() {
-                    let _ = std::fs::copy(&alt, &imported);
+                // Normalize MSVC import lib name if necessary
+                let imported = lib_dir.join("dotlin_runtime.lib");
+                if !imported.exists() {
+                    let alt = lib_dir.join("dotlin_runtime.dll.lib");
+                    if alt.exists() {
+                        let _ = std::fs::copy(&alt, &imported);
+                    }
                 }
-            }
 
-            if !imported.exists() {
-                panic!("dotlin_runtime.lib not found after build. copied: {:?}; cargo stdout: {}", copied, stdout_str);
-            }
+                if !imported.exists() {
+                    // allow static archive on unix/mac
+                    let alt2 = lib_dir.join("libdotlin_runtime.a");
+                    let alt3 = lib_dir.join("libdotlin_runtime.dylib");
+                    if !alt2.exists() && !alt3.exists() {
+                        panic!("dotlin_runtime import not found after build. copied: {:?}; cargo stdout: {}", copied, stdout_str);
+                    }
+                }
         }
 
         // Build dotc to compile the example to an executable

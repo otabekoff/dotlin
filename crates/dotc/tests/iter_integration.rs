@@ -14,7 +14,8 @@ fn compile_and_run_iter_example() {
     // Ensure runtime lib exists before compiling the example (linker requires import lib)
     let lib_dir = workspace_root.join("lib");
     let _lib_import = lib_dir.join("dotlin_runtime.lib");
-    if cfg!(target_os = "windows") {
+    // Build runtime and copy any produced runtime artifacts into workspace `lib/`
+    {
         // Use cargo JSON message-format to locate produced artifacts reliably
         let out = Command::new("cargo")
             .arg("build")
@@ -61,7 +62,13 @@ fn compile_and_run_iter_example() {
         }
 
         if !imported.exists() {
-            panic!("dotlin_runtime.lib not found after build. copied: {:?}; cargo stdout: {}", copied, stdout_str);
+            // also accept static archive on unix: libdotlin_runtime.a
+            let alt2 = lib_dir.join("libdotlin_runtime.a");
+            if alt2.exists() {
+                // nothing to do, linker will find libdotlin_runtime.a in lib/
+            } else {
+                panic!("dotlin_runtime import not found after build. copied: {:?}; cargo stdout: {}", copied, stdout_str);
+            }
         }
     }
 

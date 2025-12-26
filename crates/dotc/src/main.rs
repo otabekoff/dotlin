@@ -113,7 +113,11 @@ fn main() {
         cmd.arg("-L").arg("lib");
     }
 
-    cmd.arg("-l").arg("static=dotlin_runtime");
+    if cfg!(target_os = "windows") {
+        cmd.arg("-l").arg("static=dotlin_runtime");
+    } else {
+        cmd.arg("-l").arg("dylib=dotlin_runtime");
+    }
 
     println!("Linking correctly...");
     let status = cmd.status().expect("Failed to run rustc for linking");
