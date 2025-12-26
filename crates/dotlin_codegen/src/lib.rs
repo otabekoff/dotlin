@@ -60,6 +60,12 @@ impl CodeGenerator {
     pub fn new() -> Self {
         let mut flag_builder = settings::builder();
         flag_builder.set("opt_level", "speed").unwrap();
+        // On macOS aarch64 we need position-independent code to avoid text-relocations
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        {
+            // cranelift accepts an `is_pic` setting to indicate PIC code generation
+            let _ = flag_builder.set("is_pic", "true");
+        }
         let isa_builder = cranelift_native::builder()
             .unwrap()
             .finish(settings::Flags::new(flag_builder))
