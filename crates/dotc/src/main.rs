@@ -105,18 +105,49 @@ fn main() {
         .arg("-o")
         .arg(&exe_path);
 
+    // Determine runtime search dirs (cli override, then workspace lib)
+    let mut runtime_dirs: Vec<PathBuf> = Vec::new();
     if let Some(ref path) = cli.runtime_path {
-        cmd.arg("-L").arg(path);
-    } else {
-        // Try some default locations
-        cmd.arg("-L").arg(".");
-        cmd.arg("-L").arg("lib");
+        runtime_dirs.push(path.clone());
+    }
+    runtime_dirs.push(PathBuf::from("."));
+    runtime_dirs.push(PathBuf::from("lib"));
+
+    for d in &runtime_dirs {
+        cmd.arg("-L").arg(d);
     }
 
+    // Choose linking flavor depending on available runtime artifact
+    let mut link_arg = None;
     if cfg!(target_os = "windows") {
-        cmd.arg("-l").arg("static=dotlin_runtime");
+        link_arg = Some("static=dotlin_runtime".to_string());
     } else {
-        cmd.arg("-l").arg("dylib=dotlin_runtime");
+        // Search for static archive or shared library in runtime_dirs
+        for d in &runtime_dirs {
+            let static_lib = d.join("libdotlin_runtime.a");
+            if static_lib.exists() {
+                link_arg = Some("static=dotlin_runtime".to_string());
+                break;
+            }
+            let so_lib = d.join("libdotlin_runtime.so");
+            if so_lib.exists() {
+                link_arg = Some("dylib=dotlin_runtime".to_string());
+                break;
+            }
+            let dylib_mac = d.join("libdotlin_runtime.dylib");
+            if dylib_mac.exists() {
+                link_arg = Some("dylib=dotlin_runtime".to_string());
+                break;
+            }
+        }
+        // Fallback to dynamic if nothing found; this lets the linker try default names.
+        if link_arg.is_none() {
+            link_arg = Some("dylib=dotlin_runtime".to_string());
+        }
+    }
+
+    if let Some(arg) = link_arg {
+        cmd.arg("-l").arg(arg);
     }
 
     println!("Linking correctly...");
