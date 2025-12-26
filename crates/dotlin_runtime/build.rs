@@ -1,6 +1,6 @@
 use std::env;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 fn main() {
     // Get the output directory
@@ -27,38 +27,84 @@ fn main() {
     
     // The library name and extension based on the target OS
     #[cfg(windows)]
-    let lib_filename = "dotlin_runtime.lib";
+    let _lib_filename = "dotlin_runtime.lib"; // import library produced alongside DLL
     #[cfg(not(windows))]
-    let lib_filename = "libdotlin_runtime.a";
+    let _lib_filename = "libdotlin_runtime.a";
     
-    // Find the built library in the deps directory
-    let deps_dir = target_dir.join(env::var("PROFILE").unwrap()).join("deps");
-    
-    // Look for the library file in deps directory
-    if let Ok(entries) = fs::read_dir(&deps_dir) {
-        for entry in entries {
-            if let Ok(entry) = entry {
-                let file_name = entry.file_name();
-                let file_name_str = file_name.to_string_lossy();
-                
-                if file_name_str.starts_with("libdotlin_runtime") && 
-                   (file_name_str.ends_with(".a") || file_name_str.ends_with(".lib")) {
-                    let src_path = entry.path();
-                    let dest_path = lib_dir.join(lib_filename);
-                    
-                    // Copy the library to the lib directory
-                    match fs::copy(&src_path, &dest_path) {
-                        Ok(_) => {
-                            println!("Copied {} to lib/ directory", file_name_str);
-                            break;
-                        }
-                        Err(e) => {
-                            eprintln!("Failed to copy library: {}", e);
+    // Search recursively under several likely output directories for import libraries or DLLs
+    let mut found_import: Option<PathBuf> = None;
+    let mut found_dll: Option<PathBuf> = None;
+
+    fn visit_dir(dir: &Path, found_import: &mut Option<PathBuf>, found_dll: &mut Option<PathBuf>) {
+        if !dir.exists() {
+            return;
+        }
+        if let Ok(entries) = fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    visit_dir(&path, found_import, found_dll);
+                } else if let Some(name) = path.file_name().and_then(|s| s.to_str()) {
+                    let lname = name.to_ascii_lowercase();
+                    if lname.contains("dotlin_runtime") {
+                        if lname.ends_with(".lib") || lname.ends_with(".dll.lib") {
+                            if found_import.is_none() {
+                                *found_import = Some(path.clone());
+                            }
+                        } else if lname.ends_with(".dll") {
+                            if found_dll.is_none() {
+                                *found_dll = Some(path.clone());
+                            }
+                        } else if lname.ends_with(".a") || lname.ends_with(".rlib") {
+                            // treat static archives as import candidates for non-windows
+                            if found_import.is_none() {
+                                *found_import = Some(path.clone());
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    // Primary scan: the inferred target directory (covers most cases)
+    visit_dir(&target_dir, &mut found_import, &mut found_dll);
+
+    // Additional common locations: release and release/deps
+    let release = target_dir.join("release");
+    let release_deps = release.join("deps");
+    visit_dir(&release, &mut found_import, &mut found_dll);
+    visit_dir(&release_deps, &mut found_import, &mut found_dll);
+
+    // Also check triple-specific layout (e.g., target/<triple>/release and deps)
+    if let Some(triple) = env::var("TARGET").ok() {
+        let triple_dir = target_dir.join(&triple).join("release");
+        let triple_deps = triple_dir.join("deps");
+        visit_dir(&triple_dir, &mut found_import, &mut found_dll);
+        visit_dir(&triple_deps, &mut found_import, &mut found_dll);
+    }
+
+    // Copy import lib if available
+    if let Some(ref import_path) = found_import {
+        let dest_path = lib_dir.join("dotlin_runtime.lib");
+        match fs::copy(import_path, &dest_path) {
+            Ok(_) => println!("Copied import lib {} to lib/ directory", import_path.display()),
+            Err(e) => eprintln!("Failed to copy import lib {}: {}", import_path.display(), e),
+        }
+    }
+
+    // Copy DLL if available
+    if let Some(ref dll_path) = found_dll {
+        let dest_path = lib_dir.join("dotlin_runtime.dll");
+        match fs::copy(dll_path, &dest_path) {
+            Ok(_) => println!("Copied DLL {} to lib/ directory", dll_path.display()),
+            Err(e) => eprintln!("Failed to copy DLL {}: {}", dll_path.display(), e),
+        }
+    }
+
+    // If neither was found, warn (we already attempted multiple locations)
+    if found_import.is_none() && found_dll.is_none() {
+        eprintln!("Warning: could not find built dotlin_runtime artifact under {} (searched common release/deps locations)", target_dir.display());
     }
     
     // Also set up linker arguments to look in the lib directory

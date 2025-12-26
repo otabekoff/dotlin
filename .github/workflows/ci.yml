@@ -121,6 +121,18 @@ jobs:
         copy target\${{ matrix.target }}\release\dotc.exe release\bin\
         copy target\${{ matrix.target }}\release\dotrepl.exe release\bin\
         copy target\${{ matrix.target }}\release\dotlin_runtime.lib release\lib\
+        if exist target\${{ matrix.target }}\release\dotlin_runtime.dll copy target\${{ matrix.target }}\release\dotlin_runtime.dll release\lib\
+        if exist target\${{ matrix.target }}\release\deps\dotlin_runtime.dll copy target\${{ matrix.target }}\release\deps\dotlin_runtime.dll release\lib\
+
+    - name: Verify runtime artifacts
+      run: |
+        echo "Listing release/lib:" && dir release\lib || true
+        if "%RUNNER_OS%" == "Windows" (
+          if not exist release\lib\dotlin_runtime.lib ( echo "Missing dotlin_runtime.lib" & exit 1 )
+          if not exist release\lib\dotlin_runtime.dll ( echo "Missing dotlin_runtime.dll" & exit 1 )
+        ) else (
+          if not exist release/lib/dotlin_runtime.lib ( echo "Missing libdotlin_runtime.a" & exit 1 )
+        )
     
     - name: Create archive (tar.gz)
       if: matrix.archive_ext == 'tar.gz'
