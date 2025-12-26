@@ -473,6 +473,7 @@ impl CodeGenerator {
         let mut sig_math_abs = self.module.make_signature();
         sig_math_abs.params.push(AbiParam::new(types::F64));
         sig_math_abs.returns.push(AbiParam::new(types::F64));
+        self.set_call_conv(&mut sig_math_abs);
         let math_abs = self
             .module
             .declare_function("dotlin_math_abs", Linkage::Import, &sig_math_abs)?;
@@ -483,6 +484,7 @@ impl CodeGenerator {
         sig_math_min.params.push(AbiParam::new(types::F64));
         sig_math_min.params.push(AbiParam::new(types::F64));
         sig_math_min.returns.push(AbiParam::new(types::F64));
+        self.set_call_conv(&mut sig_math_min);
         let math_min = self
             .module
             .declare_function("dotlin_math_min", Linkage::Import, &sig_math_min)?;
@@ -493,6 +495,7 @@ impl CodeGenerator {
         sig_math_max.params.push(AbiParam::new(types::F64));
         sig_math_max.params.push(AbiParam::new(types::F64));
         sig_math_max.returns.push(AbiParam::new(types::F64));
+        self.set_call_conv(&mut sig_math_max);
         let math_max = self
             .module
             .declare_function("dotlin_math_max", Linkage::Import, &sig_math_max)?;
@@ -502,6 +505,7 @@ impl CodeGenerator {
         let mut sig_math_sqrt = self.module.make_signature();
         sig_math_sqrt.params.push(AbiParam::new(types::F64));
         sig_math_sqrt.returns.push(AbiParam::new(types::F64));
+        self.set_call_conv(&mut sig_math_sqrt);
         let math_sqrt = self
             .module
             .declare_function("dotlin_math_sqrt", Linkage::Import, &sig_math_sqrt)?;
@@ -512,6 +516,7 @@ impl CodeGenerator {
         sig_math_pow.params.push(AbiParam::new(types::F64));
         sig_math_pow.params.push(AbiParam::new(types::F64));
         sig_math_pow.returns.push(AbiParam::new(types::F64));
+        self.set_call_conv(&mut sig_math_pow);
         let math_pow = self
             .module
             .declare_function("dotlin_math_pow", Linkage::Import, &sig_math_pow)?;
@@ -521,6 +526,7 @@ impl CodeGenerator {
         let mut sig_math_sin = self.module.make_signature();
         sig_math_sin.params.push(AbiParam::new(types::F64));
         sig_math_sin.returns.push(AbiParam::new(types::F64));
+        self.set_call_conv(&mut sig_math_sin);
         let math_sin = self
             .module
             .declare_function("dotlin_math_sin", Linkage::Import, &sig_math_sin)?;
@@ -530,6 +536,7 @@ impl CodeGenerator {
         let mut sig_math_cos = self.module.make_signature();
         sig_math_cos.params.push(AbiParam::new(types::F64));
         sig_math_cos.returns.push(AbiParam::new(types::F64));
+        self.set_call_conv(&mut sig_math_cos);
         let math_cos = self
             .module
             .declare_function("dotlin_math_cos", Linkage::Import, &sig_math_cos)?;
@@ -539,6 +546,7 @@ impl CodeGenerator {
         let mut sig_math_tan = self.module.make_signature();
         sig_math_tan.params.push(AbiParam::new(types::F64));
         sig_math_tan.returns.push(AbiParam::new(types::F64));
+        self.set_call_conv(&mut sig_math_tan);
         let math_tan = self
             .module
             .declare_function("dotlin_math_tan", Linkage::Import, &sig_math_tan)?;
@@ -548,6 +556,7 @@ impl CodeGenerator {
         let mut sig_math_floor = self.module.make_signature();
         sig_math_floor.params.push(AbiParam::new(types::F64));
         sig_math_floor.returns.push(AbiParam::new(types::F64));
+        self.set_call_conv(&mut sig_math_floor);
         let math_floor = self
             .module
             .declare_function("dotlin_math_floor", Linkage::Import, &sig_math_floor)?;
@@ -557,6 +566,7 @@ impl CodeGenerator {
         let mut sig_math_ceil = self.module.make_signature();
         sig_math_ceil.params.push(AbiParam::new(types::F64));
         sig_math_ceil.returns.push(AbiParam::new(types::F64));
+        self.set_call_conv(&mut sig_math_ceil);
         let math_ceil = self
             .module
             .declare_function("dotlin_math_ceil", Linkage::Import, &sig_math_ceil)?;
@@ -566,6 +576,7 @@ impl CodeGenerator {
         let mut sig_math_round = self.module.make_signature();
         sig_math_round.params.push(AbiParam::new(types::F64));
         sig_math_round.returns.push(AbiParam::new(types::F64));
+        self.set_call_conv(&mut sig_math_round);
         let math_round = self
             .module
             .declare_function("dotlin_math_round", Linkage::Import, &sig_math_round)?;
@@ -575,6 +586,7 @@ impl CodeGenerator {
         let mut sig_math_log = self.module.make_signature();
         sig_math_log.params.push(AbiParam::new(types::F64));
         sig_math_log.returns.push(AbiParam::new(types::F64));
+        self.set_call_conv(&mut sig_math_log);
         let math_log = self
             .module
             .declare_function("dotlin_math_log", Linkage::Import, &sig_math_log)?;
@@ -584,6 +596,7 @@ impl CodeGenerator {
         let mut sig_math_exp = self.module.make_signature();
         sig_math_exp.params.push(AbiParam::new(types::F64));
         sig_math_exp.returns.push(AbiParam::new(types::F64));
+        self.set_call_conv(&mut sig_math_exp);
         let math_exp = self
             .module
             .declare_function("dotlin_math_exp", Linkage::Import, &sig_math_exp)?;
@@ -592,6 +605,7 @@ impl CodeGenerator {
         
         let mut sig_math_pi = self.module.make_signature();
         sig_math_pi.returns.push(AbiParam::new(types::F64));
+        self.set_call_conv(&mut sig_math_pi);
         let math_pi = self
             .module
             .declare_function("dotlin_math_pi", Linkage::Import, &sig_math_pi)?;
@@ -600,6 +614,7 @@ impl CodeGenerator {
         
         let mut sig_math_e = self.module.make_signature();
         sig_math_e.returns.push(AbiParam::new(types::F64));
+        self.set_call_conv(&mut sig_math_e);
         let math_e = self
             .module
             .declare_function("dotlin_math_e", Linkage::Import, &sig_math_e)?;
