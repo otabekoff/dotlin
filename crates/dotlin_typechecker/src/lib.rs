@@ -29,6 +29,23 @@ impl TypeChecker {
         let mut functions = HashMap::new();
         // Built-ins
         functions.insert("println".to_string(), (vec![], None)); // Special handling
+        
+        // Math functions
+        functions.insert("abs".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
+        functions.insert("min".to_string(), (vec![Type::Named("Float".to_string()), Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
+        functions.insert("max".to_string(), (vec![Type::Named("Float".to_string()), Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
+        functions.insert("sqrt".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
+        functions.insert("pow".to_string(), (vec![Type::Named("Float".to_string()), Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
+        functions.insert("sin".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
+        functions.insert("cos".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
+        functions.insert("tan".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
+        functions.insert("floor".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
+        functions.insert("ceil".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
+        functions.insert("round".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
+        functions.insert("log".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
+        functions.insert("exp".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
+        functions.insert("PI".to_string(), (vec![], Some(Type::Named("Float".to_string()))));
+        functions.insert("E".to_string(), (vec![], Some(Type::Named("Float".to_string()))));
 
         Self {
             scopes: vec![HashMap::new()],
@@ -142,6 +159,98 @@ impl TypeChecker {
                 self.scopes.push(HashMap::new());
                 self.check_block(block)?;
                 self.scopes.pop();
+                Ok(())
+            }
+            Statement::ForEach {
+                variable,
+                iterable,
+                body,
+            } => {
+                // If this is a call like `obj.iter()` and `obj` is a Map, allow tuple destructuring
+                let mut handled = false;
+                if let ExpressionKind::Call { callee, .. } = &mut *iterable.kind {
+                    if let ExpressionKind::MemberAccess { object, member } = &*callee.kind {
+                        if member == "iter" {
+                            // Check the object type
+                            let mut obj_expr = (*object).clone();
+                            let obj_typ = self.check_expression(&mut obj_expr)?;
+                            if let Type::Map(key_type, value_type) = obj_typ {
+                                // Create a new scope for the for-each loop
+                                self.scopes.push(HashMap::new());
+
+                                match variable {
+                                    dotlin_ast::ForEachTarget::Ident(name) => {
+                                        // Iterating over a map with a single identifier yields keys
+                                        self.define_var(name.clone(), (*key_type).clone());
+                                    }
+                                    dotlin_ast::ForEachTarget::Tuple(names) => {
+                                        // If two names, assign key and value types respectively
+                                        if names.len() == 2 {
+                                            self.define_var(names[0].clone(), (*key_type).clone());
+                                            self.define_var(names[1].clone(), (*value_type).clone());
+                                        } else {
+                                            // Fallback: assign key type to all names
+                                            for n in names {
+                                                self.define_var(n.clone(), (*key_type).clone());
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Check the loop body
+                                self.check_statement(body)?;
+
+                                // Pop the scope
+                                self.scopes.pop();
+                                handled = true;
+                            }
+                        }
+                    }
+                }
+
+                if handled {
+                    return Ok(());
+                }
+
+                // Fallback: Check the iterable expression normally
+                let iterable_type = self.check_expression(iterable)?;
+
+                // For now, we'll handle iteration over arrays and HashMaps
+                let element_type = match iterable_type {
+                    Type::Array(element_type) => *element_type,
+                    Type::Map(key_type, _) => {
+                        // For HashMap iteration, we can iterate over keys, values, or entries
+                        // For now, assume iterating over keys
+                        *key_type
+                    }
+                    _ => return Err(TypeError::Mismatch {
+                        expected: Type::Array(Box::new(Type::Named("Int".to_string()))),
+                        found: iterable_type,
+                    }),
+                };
+
+                // Create a new scope for the for-each loop
+                self.scopes.push(HashMap::new());
+
+                // Add the loop variable(s) to the scope
+                match variable {
+                    dotlin_ast::ForEachTarget::Ident(name) => {
+                        self.define_var(name.clone(), element_type.clone());
+                    }
+                    dotlin_ast::ForEachTarget::Tuple(names) => {
+                        // For now, assign the same element_type to each destructured name
+                        for n in names {
+                            self.define_var(n.clone(), element_type.clone());
+                        }
+                    }
+                }
+
+                // Check the loop body
+                self.check_statement(body)?;
+
+                // Pop the scope
+                self.scopes.pop();
+
                 Ok(())
             }
         }
@@ -265,7 +374,47 @@ impl TypeChecker {
                 }
             }
             ExpressionKind::Call { callee, arguments } => {
-                if let ExpressionKind::Variable(ref name) = &*callee.kind {
+                // Handle method calls (obj.method()) which are represented as Call with MemberAccess callee
+                if let ExpressionKind::MemberAccess { object, member } = &*callee.kind {
+                    // This is a method call on an object
+                    // We need to handle mutability properly
+                    let mut obj_expr = (*object).clone();
+                    let obj_typ = self.check_expression(&mut obj_expr)?;
+                    
+                    // Handle type conversion methods and HashMap iteration methods
+                    match (&obj_typ, member.as_str()) {
+                        // String conversion methods
+                        (Type::Named(name), "toInt") if name == "String" => Type::Named("Int".to_string()),
+                        (Type::Named(name), "toFloat") if name == "String" => Type::Named("Float".to_string()),
+                        
+                        // Numeric conversion methods
+                        (Type::Named(name), "toFloat") if name == "Int" => Type::Named("Float".to_string()),
+                        (Type::Named(name), "toInt") if name == "Float" => Type::Named("Int".to_string()),
+                        
+                        // To string methods
+                        (Type::Named(name), "toString") if name == "Int" => Type::Named("String".to_string()),
+                        (Type::Named(name), "toString") if name == "Float" => Type::Named("String".to_string()),
+                        (Type::Named(name), "toString") if name == "Boolean" => Type::Named("String".to_string()),
+                        (Type::Named(name), "toString") if name == "Char" => Type::Named("String".to_string()),
+                        
+                        // Array methods
+                        (Type::Array(_), "push") => Type::Named("Int".to_string()), // returns void but using Int as placeholder
+                        (Type::Array(_), "pop") => Type::Named("Int".to_string()), // returns the popped element
+                        
+                        // HashMap iteration methods
+                        (Type::Map(_, _), "keys") => Type::Array(Box::new(Type::Named("String".to_string()))), // Returns array of keys
+                        (Type::Map(_, _), "values") => Type::Array(Box::new(Type::Named("Int".to_string()))), // Returns array of values (for now)
+                        (Type::Map(_, _), "size") => Type::Named("Int".to_string()), // Returns size as int
+                        (Type::Map(_, _), "entries") => Type::Array(Box::new(Type::Named("Int".to_string()))), // Returns array of alternating key-value pairs (for now)
+                        
+                        // Undefined method
+                        (obj_type, method_name) => return Err(TypeError::UndefinedMember {
+                            typ: obj_type.clone(),
+                            member: method_name.to_string(),
+                        }),
+                    }
+                } else if let ExpressionKind::Variable(name) = &*callee.kind {
+                    // Regular function call
                     if name == "println" {
                         // println is special, accepts anything for now
                         for arg in arguments {
@@ -301,13 +450,35 @@ impl TypeChecker {
             }
             ExpressionKind::MemberAccess { object, member } => {
                 let obj_typ = self.check_expression(object)?;
-                if obj_typ == Type::Named("String".to_string()) && member == "length" {
-                    Type::Named("Int".to_string())
-                } else {
-                    return Err(TypeError::UndefinedMember {
+                match (&obj_typ, member.as_str()) {
+                    // String length property
+                    (Type::Named(name), "length") if name == "String" => Type::Named("Int".to_string()),
+                    
+                    // Type conversion methods
+                    (Type::Named(name), "toInt") if name == "String" => Type::Named("Int".to_string()),
+                    (Type::Named(name), "toFloat") if name == "String" => Type::Named("Float".to_string()),
+                    (Type::Named(name), "toFloat") if name == "Int" => Type::Named("Float".to_string()),
+                    (Type::Named(name), "toInt") if name == "Float" => Type::Named("Int".to_string()),
+                    (Type::Named(name), "toString") if name == "Int" => Type::Named("String".to_string()),
+                    (Type::Named(name), "toString") if name == "Float" => Type::Named("String".to_string()),
+                    (Type::Named(name), "toString") if name == "Boolean" => Type::Named("String".to_string()),
+                    (Type::Named(name), "toString") if name == "Char" => Type::Named("String".to_string()),
+                    
+                    // Array methods
+                    (Type::Array(_), "push") => Type::Named("Int".to_string()), // returns void but using Int as placeholder
+                    (Type::Array(_), "pop") => Type::Named("Int".to_string()), // returns the popped value
+                    
+                    // HashMap iteration methods
+                    (Type::Map(_, _), "keys") => Type::Array(Box::new(Type::Named("String".to_string()))), // Returns array of keys
+                    (Type::Map(_, _), "values") => Type::Array(Box::new(Type::Named("Int".to_string()))), // Returns array of values (for now)
+                    (Type::Map(_, _), "size") => Type::Named("Int".to_string()), // Returns size as int
+                    (Type::Map(_, _), "entries") => Type::Array(Box::new(Type::Named("Int".to_string()))), // Returns array of alternating key-value pairs (for now)
+                    
+                    // Undefined member access
+                    _ => return Err(TypeError::UndefinedMember {
                         typ: obj_typ,
                         member: member.clone(),
-                    });
+                    }),
                 }
             }
             ExpressionKind::ArrayLiteral { elements } => {

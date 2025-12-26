@@ -1,0 +1,22 @@
+fun main() {
+    var map = {"key1": 100, "key2": 200, "key3": 300}
+    println("HashMap created")
+    
+    // Test size method
+    var map_size = map.size()
+    println("Size: " + map_size.toString())
+    
+    // Test keys method
+    var keys = map.keys()
+    println("Keys method called")
+    
+    // Test values method
+    var values = map.values()
+    println("Values method called")
+    
+    // Test entries method
+    var entries = map.entries()
+    println("Entries method called")
+    
+    println("All HashMap iteration methods work!")
+}

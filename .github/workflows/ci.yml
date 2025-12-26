@@ -120,9 +120,12 @@ jobs:
       run: |
         copy target\${{ matrix.target }}\release\dotc.exe release\bin\
         copy target\${{ matrix.target }}\release\dotrepl.exe release\bin\
-        copy target\${{ matrix.target }}\release\dotlin_runtime.lib release\lib\
+        copy target\${{ matrix.target }}\release\dotlin_runtime.lib release\lib\ || echo no-import-lib
         if exist target\${{ matrix.target }}\release\dotlin_runtime.dll copy target\${{ matrix.target }}\release\dotlin_runtime.dll release\lib\
         if exist target\${{ matrix.target }}\release\deps\dotlin_runtime.dll copy target\${{ matrix.target }}\release\deps\dotlin_runtime.dll release\lib\
+        if exist target\${{ matrix.target }}\release\dotlin_runtime.dll.lib copy target\${{ matrix.target }}\release\dotlin_runtime.dll.lib release\lib\
+        REM Normalize MSVC import-lib name if necessary
+        if not exist release\lib\dotlin_runtime.lib if exist release\lib\dotlin_runtime.dll.lib copy release\lib\dotlin_runtime.dll.lib release\lib\dotlin_runtime.lib
 
     - name: Verify runtime artifacts
       run: |

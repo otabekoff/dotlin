@@ -1,0 +1,18 @@
+fun main() {
+    // Test ForEach loop with array
+    var numbers = [1, 2, 3, 4, 5]
+    println("Testing ForEach loop with array:")
+    for (num in numbers) {
+        println(num)
+    }
+    
+    // Test ForEach loop with HashMap
+    var map = {"key1": 100, "key2": 200, "key3": 300}
+    println("Testing ForEach loop with HashMap keys:")
+    for (key in map.keys()) {
+        var value = map[key]
+        println(key + ": " + value.toString())
+    }
+    
+    println("ForEach loop test completed!")
+}

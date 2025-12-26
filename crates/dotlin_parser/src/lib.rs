@@ -217,6 +217,78 @@ impl<'a> Parser<'a> {
             return Ok(Statement::While { condition, body });
         }
 
+        if self.peek() == Some(&Token::For) {
+            self.advance(); // consume 'for'
+            self.expect(Token::LParen)?; // consume '('
+
+            let variable = if self.peek() == Some(&Token::LParen) {
+                // tuple destructuring with inner parentheses: ( (a, b, ...) ... )
+                self.advance(); // consume inner '('
+                let mut names = Vec::new();
+                loop {
+                    let name = match self.advance() {
+                        Some(Token::Identifier(id)) => id,
+                        Some(t) => return Err(ParseError::ExpectedIdentifier(t)),
+                        None => return Err(ParseError::UnexpectedEOF),
+                    };
+                    names.push(name);
+                    if self.peek() == Some(&Token::Comma) {
+                        self.advance();
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
+                self.expect(Token::RParen)?; // consume inner ')'
+                dotlin_ast::ForEachTarget::Tuple(names)
+            } else {
+                // Could be a single identifier or a tuple without inner parentheses: (a, b, ...)
+                let first = match self.advance() {
+                    Some(Token::Identifier(id)) => id,
+                    Some(t) => return Err(ParseError::ExpectedIdentifier(t)),
+                    None => return Err(ParseError::UnexpectedEOF),
+                };
+
+                if self.peek() == Some(&Token::Comma) {
+                    // tuple without inner parentheses
+                    let mut names = vec![first];
+                    while self.peek() == Some(&Token::Comma) {
+                        self.advance(); // consume comma
+                        let name = match self.advance() {
+                            Some(Token::Identifier(id)) => id,
+                            Some(t) => return Err(ParseError::ExpectedIdentifier(t)),
+                            None => return Err(ParseError::UnexpectedEOF),
+                        };
+                        names.push(name);
+                    }
+                    dotlin_ast::ForEachTarget::Tuple(names)
+                } else {
+                    dotlin_ast::ForEachTarget::Ident(first)
+                }
+            };
+
+            // Support both `for (var in iterable) {}` and `for (var) in iterable {}`
+            let iterable = if self.peek() == Some(&Token::In) {
+                // form: for ( <var> in <iterable> )
+                self.advance(); // consume 'in'
+                let it = self.parse_expression()?;
+                self.expect(Token::RParen)?; // consume closing ')'
+                it
+            } else if self.peek() == Some(&Token::RParen) {
+                // form: for ( <var> ) in <iterable>
+                self.advance(); // consume ')'
+                self.expect(Token::In)?; // now require 'in'
+                self.parse_expression()?
+            } else {
+                // unexpected token
+                return Err(ParseError::UnexpectedToken(self.advance().unwrap_or(Token::Error)));
+            };
+
+            let body = Box::new(self.parse_statement()?);
+
+            return Ok(Statement::ForEach { variable, iterable, body });
+        }
+
         if self.peek() == Some(&Token::Return) {
             self.advance();
             let mut value = None;

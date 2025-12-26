@@ -1,0 +1,43 @@
+fun main() {
+    // Comprehensive test for math functions
+    println("Testing all math functions:")
+    
+    // Test abs function
+    println("abs(-5.0) = " + abs(-5.0).toString())
+    println("abs(5.0) = " + abs(5.0).toString())
+    println("abs(-10) = " + abs(-10).toString())
+    
+    // Test min function
+    println("min(3.0, 7.0) = " + min(3.0, 7.0).toString())
+    println("min(10, 5) = " + min(10, 5).toString())
+    println("min(2.5, 3) = " + min(2.5, 3.0).toString())
+    
+    // Test max function
+    println("max(3.0, 7.0) = " + max(3.0, 7.0).toString())
+    println("max(10, 5) = " + max(10, 5).toString())
+    println("max(2.5, 3) = " + max(2.5, 3.0).toString())
+    
+    // Test sqrt function
+    println("sqrt(16.0) = " + sqrt(16.0).toString())
+    println("sqrt(25) = " + sqrt(25).toString())
+    
+    // Test pow function
+    println("pow(2.0, 3.0) = " + pow(2.0, 3.0).toString())
+    println("pow(3, 2) = " + pow(3, 2).toString())
+    
+    // Test trigonometric functions
+    println("sin(0.0) = " + sin(0.0).toString())
+    println("cos(0.0) = " + cos(0.0).toString())
+    println("tan(0.0) = " + tan(0.0).toString())
+    
+    // Test floor, ceil, round
+    println("floor(3.7) = " + floor(3.7).toString())
+    println("ceil(3.2) = " + ceil(3.2).toString())
+    println("round(3.5) = " + round(3.5).toString())
+    
+    // Test log and exp
+    println("log(1.0) = " + log(1.0).toString())
+    println("exp(0.0) = " + exp(0.0).toString())
+    
+    println("All math functions test completed!")
+}

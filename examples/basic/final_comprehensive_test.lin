@@ -1,0 +1,93 @@
+// Final comprehensive test for all implemented features
+fun main() {
+    println("=== Dotlin v0.3.1 Comprehensive Test ===")
+    
+    // Test math functions
+    println("1. Testing Math Functions:")
+    println("   abs(-5.5) = " + abs(-5.5).toString())
+    println("   min(3.2, 7.8) = " + min(3.2, 7.8).toString())
+    println("   max(3.2, 7.8) = " + max(3.2, 7.8).toString())
+    println("   sqrt(25.0) = " + sqrt(25.0).toString())
+    println("   pow(2.0, 3.0) = " + pow(2.0, 3.0).toString())
+    println("   sin(0.0) = " + sin(0.0).toString())
+    println("   cos(0.0) = " + cos(0.0).toString())
+    
+    // Test array functionality
+    println("2. Testing Array Functions:")
+    var arr = [10, 20, 30, 40, 50]
+    println("   Array created: [10, 20, 30, 40, 50]")
+    println("   arr[0] = " + arr[0].toString())
+    arr.push(60)
+    println("   After push(60), length = " + arr.length().toString())
+    var popped = arr.pop()
+    println("   After pop(), popped value = " + popped.toString())
+    
+    // Test HashMap functionality
+    println("3. Testing HashMap Functions:")
+    var map = {"name": "Dotlin", "version": 3, "released": true}
+    println("   HashMap created with 3 entries")
+    println("   map[\"name\"] = " + map["name"])
+    println("   map.size() = " + map.size().toString())
+    var keys = map.keys()
+    println("   map.keys() length = " + keys.length().toString())
+    var values = map.values()
+    println("   map.values() length = " + values.length().toString())
+    
+    // Test ForEach loops
+    println("4. Testing ForEach Loops:")
+    println("   Array iteration:")
+    for (item in arr) {
+        println("     " + item.toString())
+    }
+    
+    println("   HashMap key iteration:")
+    for (key in map.keys()) {
+        println("     " + key + " = " + map[key])
+    }
+    
+    // Test type conversions
+    println("5. Testing Type Conversions:")
+    var intVal = 42
+    var floatVal = intVal.toFloat()
+    var stringVal = floatVal.toString()
+    println("   int 42 -> float -> string = " + stringVal)
+    
+    var strNum = "123"
+    var intFromStr = strNum.toInt()
+    println("   string \"123\" -> int = " + intFromStr.toString())
+    
+    // Test string operations
+    println("6. Testing String Operations:")
+    var greeting = "Hello, "
+    var name = "Dotlin!"
+    var message = greeting + name
+    println("   String concatenation: " + message)
+    println("   String length: " + message.length.toString())
+    
+    // Test logical operations
+    println("7. Testing Logical Operations:")
+    var a = true
+    var b = false
+    println("   true && false = " + (a && b).toString())
+    println("   true || false = " + (a || b).toString())
+    
+    // Test compound assignments
+    println("8. Testing Compound Assignments:")
+    var num = 10
+    num += 5
+    println("   10 += 5 = " + num.toString())
+    num *= 2
+    println("   15 * 2 = " + num.toString())
+    
+    // Test increment/decrement
+    println("9. Testing Increment/Decrement:")
+    var counter = 5
+    println("   Initial counter = " + counter.toString())
+    counter++
+    println("   After counter++ = " + counter.toString())
+    counter--
+    println("   After counter-- = " + counter.toString())
+    
+    println("=== All Tests Completed Successfully! ===")
+    println("Dotlin v0.3.1 is ready for advanced mathematical computations!")
+}

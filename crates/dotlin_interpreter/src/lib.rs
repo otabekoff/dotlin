@@ -19,6 +19,247 @@ pub enum Value {
     NativeFunction(fn(Vec<Value>) -> Result<Value, RuntimeError>),
     Array(Vec<Value>),
     HashMap(std::collections::HashMap<String, Value>),
+    Iterator(Rc<RefCell<IteratorState>>),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn hashmap_iter_for_each_runs() {
+        // Build AST for:
+        // fun main() {
+        //   var m = {"a":1, "b":2}
+        //   var s = 0
+        //   for (k, v) in m.iter() { s = s + v }
+        // }
+
+        let map_pairs = vec![
+            (
+                Expression::new(ExpressionKind::Literal(Literal::String("a".to_string()))),
+                Expression::new(ExpressionKind::Literal(Literal::Integer(1))),
+            ),
+            (
+                Expression::new(ExpressionKind::Literal(Literal::String("b".to_string()))),
+                Expression::new(ExpressionKind::Literal(Literal::Integer(2))),
+            ),
+        ];
+
+        let m_decl = Statement::VariableDecl {
+            name: "m".to_string(),
+            typ: None,
+            initializer: Some(Expression::new(ExpressionKind::HashMapLiteral { pairs: map_pairs })),
+        };
+
+        let s_decl = Statement::VariableDecl {
+            name: "s".to_string(),
+            typ: None,
+            initializer: Some(Expression::new(ExpressionKind::Literal(Literal::Integer(0)))),
+        };
+
+        // m.iter() call
+        let call_iter = Expression::new(ExpressionKind::Call {
+            callee: Expression::new(ExpressionKind::MemberAccess {
+                object: Expression::new(ExpressionKind::Variable("m".to_string())),
+                member: "iter".to_string(),
+            }),
+            arguments: vec![],
+        });
+
+        // for (k, v) in m.iter() { s = s + v }
+        let body_stmt = Statement::Expression(Expression::new(ExpressionKind::Assignment {
+            name: "s".to_string(),
+            value: Expression::new(ExpressionKind::Binary {
+                left: Expression::new(ExpressionKind::Variable("s".to_string())),
+                operator: BinaryOp::Add,
+                right: Expression::new(ExpressionKind::Variable("v".to_string())),
+            }),
+        }));
+
+        let for_stmt = Statement::ForEach {
+            variable: dotlin_ast::ForEachTarget::Tuple(vec!["k".to_string(), "v".to_string()]),
+            iterable: call_iter,
+            body: Box::new(body_stmt),
+        };
+
+        let func = FunctionDecl {
+            name: "main".to_string(),
+            params: vec![],
+            return_type: None,
+            body: Block { statements: vec![m_decl, s_decl, for_stmt] },
+        };
+
+        let program = Program { declarations: vec![Declaration::Function(func)] };
+
+        let mut interp = Interpreter::new();
+        let res = interp.interpret_program(&program);
+        if let Err(e) = &res {
+            eprintln!("Interpreter error: {:?}", e);
+        }
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn iterator_next_and_exhaustion() {
+        // Build statements at top-level so variables live in globals
+        // var m = {"a":1, "b":2}
+        let map_pairs = vec![
+            (
+                Expression::new(ExpressionKind::Literal(Literal::String("a".to_string()))),
+                Expression::new(ExpressionKind::Literal(Literal::Integer(1))),
+            ),
+            (
+                Expression::new(ExpressionKind::Literal(Literal::String("b".to_string()))),
+                Expression::new(ExpressionKind::Literal(Literal::Integer(2))),
+            ),
+        ];
+        let m_decl = Statement::VariableDecl {
+            name: "m".to_string(),
+            typ: None,
+            initializer: Some(Expression::new(ExpressionKind::HashMapLiteral { pairs: map_pairs })),
+        };
+
+        // var it = m.iter()
+        let call_iter = Expression::new(ExpressionKind::Call {
+            callee: Expression::new(ExpressionKind::MemberAccess {
+                object: Expression::new(ExpressionKind::Variable("m".to_string())),
+                member: "iter".to_string(),
+            }),
+            arguments: vec![],
+        });
+        let it_decl = Statement::VariableDecl {
+            name: "it".to_string(),
+            typ: None,
+            initializer: Some(call_iter),
+        };
+
+        // var e1 = it.next()
+        let call_next1 = Expression::new(ExpressionKind::Call {
+            callee: Expression::new(ExpressionKind::MemberAccess {
+                object: Expression::new(ExpressionKind::Variable("it".to_string())),
+                member: "next".to_string(),
+            }),
+            arguments: vec![],
+        });
+        let e1_decl = Statement::VariableDecl {
+            name: "e1".to_string(),
+            typ: None,
+            initializer: Some(call_next1),
+        };
+
+        // var e2 = it.next()
+        let call_next2 = Expression::new(ExpressionKind::Call {
+            callee: Expression::new(ExpressionKind::MemberAccess {
+                object: Expression::new(ExpressionKind::Variable("it".to_string())),
+                member: "next".to_string(),
+            }),
+            arguments: vec![],
+        });
+        let e2_decl = Statement::VariableDecl {
+            name: "e2".to_string(),
+            typ: None,
+            initializer: Some(call_next2),
+        };
+
+        // var e3 = it.next()
+        let call_next3 = Expression::new(ExpressionKind::Call {
+            callee: Expression::new(ExpressionKind::MemberAccess {
+                object: Expression::new(ExpressionKind::Variable("it".to_string())),
+                member: "next".to_string(),
+            }),
+            arguments: vec![],
+        });
+        let e3_decl = Statement::VariableDecl {
+            name: "e3".to_string(),
+            typ: None,
+            initializer: Some(call_next3),
+        };
+
+        let interp = Interpreter::new();
+        // execute statements in globals
+        interp.interpret_statement(&m_decl).unwrap();
+        interp.interpret_statement(&it_decl).unwrap();
+        interp.interpret_statement(&e1_decl).unwrap();
+        interp.interpret_statement(&e2_decl).unwrap();
+        interp.interpret_statement(&e3_decl).unwrap();
+
+        // Inspect globals
+        let g = interp.globals.borrow();
+        let e1 = g.get("e1").unwrap();
+        let e2 = g.get("e2").unwrap();
+        let e3 = g.get("e3").unwrap();
+
+        // e1 and e2 should be arrays of length 2, e3 should be Void
+        if let Value::Array(a) = e1 {
+            assert_eq!(a.len(), 2);
+            match (&a[0], &a[1]) {
+                (Value::String(_), Value::Integer(_)) => {}
+                _ => panic!("e1 entry shape unexpected"),
+            }
+        } else {
+            panic!("e1 expected array");
+        }
+
+        if let Value::Array(a) = e2 {
+            assert_eq!(a.len(), 2);
+            match (&a[0], &a[1]) {
+                (Value::String(_), Value::Integer(_)) => {}
+                _ => panic!("e2 entry shape unexpected"),
+            }
+        } else {
+            panic!("e2 expected array");
+        }
+
+        assert!(matches!(e3, Value::Void));
+    }
+
+    #[test]
+    fn iterator_next_on_empty_map_returns_void() {
+        // var m = {}
+        let map_pairs: Vec<(Expression, Expression)> = vec![];
+        let m_decl = Statement::VariableDecl {
+            name: "m".to_string(),
+            typ: None,
+            initializer: Some(Expression::new(ExpressionKind::HashMapLiteral { pairs: map_pairs })),
+        };
+
+        // var it = m.iter()
+        let call_iter = Expression::new(ExpressionKind::Call {
+            callee: Expression::new(ExpressionKind::MemberAccess {
+                object: Expression::new(ExpressionKind::Variable("m".to_string())),
+                member: "iter".to_string(),
+            }),
+            arguments: vec![],
+        });
+        let it_decl = Statement::VariableDecl {
+            name: "it".to_string(),
+            typ: None,
+            initializer: Some(call_iter),
+        };
+
+        // var e1 = it.next()
+        let call_next1 = Expression::new(ExpressionKind::Call {
+            callee: Expression::new(ExpressionKind::MemberAccess {
+                object: Expression::new(ExpressionKind::Variable("it".to_string())),
+                member: "next".to_string(),
+            }),
+            arguments: vec![],
+        });
+        let e1_decl = Statement::VariableDecl {
+            name: "e1".to_string(),
+            typ: None,
+            initializer: Some(call_next1),
+        };
+
+        let interp = Interpreter::new();
+        interp.interpret_statement(&m_decl).unwrap();
+        interp.interpret_statement(&it_decl).unwrap();
+        interp.interpret_statement(&e1_decl).unwrap();
+
+        let g = interp.globals.borrow();
+        let e1 = g.get("e1").unwrap();
+        assert!(matches!(e1, Value::Void));
+    }
 }
 
 impl PartialEq for Value {
@@ -48,9 +289,16 @@ impl PartialEq for Value {
             }
             (Value::Array(a1), Value::Array(a2)) => a1 == a2,
             (Value::HashMap(m1), Value::HashMap(m2)) => m1 == m2,
+            (Value::Iterator(a), Value::Iterator(b)) => Rc::ptr_eq(a, b),
             _ => false,
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct IteratorState {
+    pub items: Vec<Value>,
+    pub pos: usize,
 }
 
 impl std::fmt::Display for Value {
@@ -73,6 +321,7 @@ impl std::fmt::Display for Value {
                 }
                 write!(f, ")")
             },
+            Value::Iterator(_) => write!(f, "<iterator>"),
             Value::HashMap(map) => {
                 write!(f, "HashMap(")?;
                 let mut iter = map.iter().enumerate();
@@ -88,19 +337,28 @@ impl std::fmt::Display for Value {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug)]
 pub enum RuntimeError {
-    #[error("Undefined variable '{0}'")]
     UndefinedVariable(String),
-    #[error("Type mismatch: {0}")]
     TypeMismatch(String),
-    #[error("Not a function: {0}")]
     NotAFunction(String),
-    #[error("Incorrect argument count: expected {expected}, got {got}")]
     ArgumentCount { expected: usize, got: usize },
-    #[error("Return statement outside function")]
     Return(Value),
 }
+
+impl std::fmt::Display for RuntimeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RuntimeError::UndefinedVariable(name) => write!(f, "Undefined variable '{}'", name),
+            RuntimeError::TypeMismatch(msg) => write!(f, "Type mismatch: {}", msg),
+            RuntimeError::NotAFunction(name) => write!(f, "Not a function: {}", name),
+            RuntimeError::ArgumentCount { expected, got } => write!(f, "Incorrect argument count: expected {}, got {}", expected, got),
+            RuntimeError::Return(_) => write!(f, "Return statement outside function"),
+        }
+    }
+}
+
+impl std::error::Error for RuntimeError {}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Environment {
@@ -168,6 +426,139 @@ impl Interpreter {
                 Ok(Value::Void)
             }),
         );
+
+        // Define math functions
+        globals.borrow_mut().define(
+            "abs".to_string(),
+            Value::NativeFunction(|args| {
+                if args.len() != 1 {
+                    return Err(RuntimeError::ArgumentCount { expected: 1, got: args.len() });
+                }
+                match &args[0] {
+                    Value::Float(f) => Ok(Value::Float(f.abs())),
+                    Value::Integer(i) => Ok(Value::Integer(i.abs())),
+                    _ => Err(RuntimeError::TypeMismatch("abs() expects a number".to_string())),
+                }
+            }),
+        );
+
+        globals.borrow_mut().define(
+            "min".to_string(),
+            Value::NativeFunction(|args| {
+                if args.len() != 2 {
+                    return Err(RuntimeError::ArgumentCount { expected: 2, got: args.len() });
+                }
+                match (&args[0], &args[1]) {
+                    (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a.min(*b))),
+                    (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer((*a).min(*b))),
+                    (Value::Float(a), Value::Integer(b)) => Ok(Value::Float(a.min(*b as f64))),
+                    (Value::Integer(a), Value::Float(b)) => Ok(Value::Float((*a as f64).min(*b))),
+                    _ => Err(RuntimeError::TypeMismatch("min() expects two numbers".to_string())),
+                }
+            }),
+        );
+
+        globals.borrow_mut().define(
+            "max".to_string(),
+            Value::NativeFunction(|args| {
+                if args.len() != 2 {
+                    return Err(RuntimeError::ArgumentCount { expected: 2, got: args.len() });
+                }
+                match (&args[0], &args[1]) {
+                    (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a.max(*b))),
+                    (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer((*a).max(*b))),
+                    (Value::Float(a), Value::Integer(b)) => Ok(Value::Float(a.max(*b as f64))),
+                    (Value::Integer(a), Value::Float(b)) => Ok(Value::Float((*a as f64).max(*b))),
+                    _ => Err(RuntimeError::TypeMismatch("max() expects two numbers".to_string())),
+                }
+            }),
+        );
+
+        globals.borrow_mut().define(
+            "sqrt".to_string(),
+            Value::NativeFunction(|args| {
+                if args.len() != 1 {
+                    return Err(RuntimeError::ArgumentCount { expected: 1, got: args.len() });
+                }
+                match &args[0] {
+                    Value::Float(f) => {
+                        if *f < 0.0 {
+                            Err(RuntimeError::TypeMismatch("sqrt() expects a non-negative number".to_string()))
+                        } else {
+                            Ok(Value::Float(f.sqrt()))
+                        }
+                    },
+                    Value::Integer(i) => {
+                        if *i < 0 {
+                            Err(RuntimeError::TypeMismatch("sqrt() expects a non-negative number".to_string()))
+                        } else {
+                            Ok(Value::Float((*i as f64).sqrt()))
+                        }
+                    },
+                    _ => Err(RuntimeError::TypeMismatch("sqrt() expects a number".to_string())),
+                }
+            }),
+        );
+
+        globals.borrow_mut().define(
+            "pow".to_string(),
+            Value::NativeFunction(|args| {
+                if args.len() != 2 {
+                    return Err(RuntimeError::ArgumentCount { expected: 2, got: args.len() });
+                }
+                match (&args[0], &args[1]) {
+                    (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a.powf(*b))),
+                    (Value::Float(a), Value::Integer(b)) => Ok(Value::Float(a.powf(*b as f64))),
+                    (Value::Integer(a), Value::Float(b)) => Ok(Value::Float((*a as f64).powf(*b))),
+                    (Value::Integer(a), Value::Integer(b)) => Ok(Value::Float((*a as f64).powf(*b as f64))),
+                    _ => Err(RuntimeError::TypeMismatch("pow() expects two numbers".to_string())),
+                }
+            }),
+        );
+
+        globals.borrow_mut().define(
+            "sin".to_string(),
+            Value::NativeFunction(|args| {
+                if args.len() != 1 {
+                    return Err(RuntimeError::ArgumentCount { expected: 1, got: args.len() });
+                }
+                match &args[0] {
+                    Value::Float(f) => Ok(Value::Float(f.sin())),
+                    Value::Integer(i) => Ok(Value::Float((*i as f64).sin())),
+                    _ => Err(RuntimeError::TypeMismatch("sin() expects a number".to_string())),
+                }
+            }),
+        );
+
+        globals.borrow_mut().define(
+            "cos".to_string(),
+            Value::NativeFunction(|args| {
+                if args.len() != 1 {
+                    return Err(RuntimeError::ArgumentCount { expected: 1, got: args.len() });
+                }
+                match &args[0] {
+                    Value::Float(f) => Ok(Value::Float(f.cos())),
+                    Value::Integer(i) => Ok(Value::Float((*i as f64).cos())),
+                    _ => Err(RuntimeError::TypeMismatch("cos() expects a number".to_string())),
+                }
+            }),
+        );
+
+        globals.borrow_mut().define(
+            "tan".to_string(),
+            Value::NativeFunction(|args| {
+                if args.len() != 1 {
+                    return Err(RuntimeError::ArgumentCount { expected: 1, got: args.len() });
+                }
+                match &args[0] {
+                    Value::Float(f) => Ok(Value::Float(f.tan())),
+                    Value::Integer(i) => Ok(Value::Float((*i as f64).tan())),
+                    _ => Err(RuntimeError::TypeMismatch("tan() expects a number".to_string())),
+                }
+            }),
+        );
+        
+
 
         Self { globals }
     }
@@ -296,6 +687,112 @@ impl Interpreter {
                 }
                 Ok(())
             }
+            Statement::ForEach { variable, iterable, body } => {
+                let iterable_val = self.evaluate_expression(iterable, env.clone())?;
+
+                match iterable_val {
+                    Value::Array(elements) => {
+                        for element in elements {
+                            let new_env = Rc::new(RefCell::new(Environment::with_enclosing(env.clone())));
+                            match variable {
+                                dotlin_ast::ForEachTarget::Ident(name) => {
+                                    new_env.borrow_mut().define(name.clone(), element);
+                                }
+                                dotlin_ast::ForEachTarget::Tuple(names) => {
+                                    // Expect each element to be an array to destructure
+                                    if let Value::Array(inner) = element {
+                                        if inner.len() != names.len() {
+                                            return Err(RuntimeError::TypeMismatch(
+                                                "Destructuring assignment length mismatch".to_string(),
+                                            ));
+                                        }
+                                        for (i, n) in names.iter().enumerate() {
+                                            new_env.borrow_mut().define(n.clone(), inner[i].clone());
+                                        }
+                                    } else {
+                                        return Err(RuntimeError::TypeMismatch(
+                                            "Destructuring target requires array elements".to_string(),
+                                        ));
+                                    }
+                                }
+                            }
+                            self.execute_statement(body, new_env)?;
+                        }
+                    },
+                    Value::HashMap(map) => {
+                        // If destructuring into a tuple of (key, value), iterate entries
+                        if let dotlin_ast::ForEachTarget::Tuple(names) = variable {
+                            if names.len() != 2 {
+                                return Err(RuntimeError::TypeMismatch(
+                                    "HashMap entries destructuring requires two variables".to_string(),
+                                ));
+                            }
+                            for (key, value) in map.iter() {
+                                let new_env = Rc::new(RefCell::new(Environment::with_enclosing(env.clone())));
+                                new_env.borrow_mut().define(names[0].clone(), Value::String(key.clone()));
+                                new_env.borrow_mut().define(names[1].clone(), value.clone());
+                                self.execute_statement(body, new_env)?;
+                            }
+                        } else if let dotlin_ast::ForEachTarget::Ident(name) = variable {
+                            // For HashMap iteration, iterate over the keys
+                            for key in map.keys() {
+                                let new_env = Rc::new(RefCell::new(Environment::with_enclosing(env.clone())));
+                                new_env.borrow_mut().define(name.clone(), Value::String(key.clone()));
+                                self.execute_statement(body, new_env)?;
+                            }
+                        }
+                    },
+                    Value::Iterator(it_rc) => {
+                        loop {
+                            let next_opt = {
+                                let mut it = it_rc.borrow_mut();
+                                if it.pos >= it.items.len() {
+                                    None
+                                } else {
+                                    let v = it.items[it.pos].clone();
+                                    it.pos += 1;
+                                    Some(v)
+                                }
+                            };
+
+                            if next_opt.is_none() {
+                                break;
+                            }
+
+                            let element = next_opt.unwrap();
+                            let new_env = Rc::new(RefCell::new(Environment::with_enclosing(env.clone())));
+                            match variable {
+                                dotlin_ast::ForEachTarget::Ident(name) => {
+                                    new_env.borrow_mut().define(name.clone(), element);
+                                }
+                                dotlin_ast::ForEachTarget::Tuple(names) => {
+                                    if let Value::Array(inner) = element {
+                                        if inner.len() != names.len() {
+                                            return Err(RuntimeError::TypeMismatch(
+                                                "Destructuring assignment length mismatch".to_string(),
+                                            ));
+                                        }
+                                        for (i, n) in names.iter().enumerate() {
+                                            new_env.borrow_mut().define(n.clone(), inner[i].clone());
+                                        }
+                                    } else {
+                                        return Err(RuntimeError::TypeMismatch(
+                                            "Destructuring target requires array elements".to_string(),
+                                        ));
+                                    }
+                                }
+                            }
+                            self.execute_statement(body, new_env)?;
+                        }
+                    },
+                    _ => {
+                        return Err(RuntimeError::TypeMismatch(
+                            "ForEach iterable must be an array or HashMap".to_string(),
+                        ));
+                    }
+                }
+                Ok(())
+            }
         }
     }
 
@@ -319,12 +816,110 @@ impl Interpreter {
                 Ok(val)
             }
             ExpressionKind::Call { callee, arguments } => {
-                let callee_val = self.evaluate_expression(callee, env.clone())?;
-                let mut args = Vec::new();
-                for arg in arguments {
-                    args.push(self.evaluate_expression(arg, env.clone())?);
+                // Handle method calls (obj.method()) which are represented as Call with MemberAccess callee
+                if let ExpressionKind::MemberAccess { object, member } = &*callee.kind {
+                    // This is a method call on an object
+                    let obj_val = self.evaluate_expression(object, env.clone())?;
+                    let _args: Vec<Value> = arguments
+                        .iter()
+                        .map(|arg| self.evaluate_expression(arg, env.clone()))
+                        .collect::<Result<Vec<_>, _>>()?;
+                    
+                    // Handle type conversion methods and HashMap iteration methods
+                    match (obj_val, member.as_str()) {
+                        (Value::String(s), "toInt") => {
+                            match s.parse::<i64>() {
+                                Ok(num) => Ok(Value::Integer(num)),
+                                Err(_) => Err(RuntimeError::TypeMismatch(
+                                    format!("Cannot convert string '{}' to integer", s)
+                                )),
+                            }
+                        },
+                        (Value::String(s), "toFloat") => {
+                            match s.parse::<f64>() {
+                                Ok(num) => Ok(Value::Float(num)),
+                                Err(_) => Err(RuntimeError::TypeMismatch(
+                                    format!("Cannot convert string '{}' to float", s)
+                                )),
+                            }
+                        },
+                        (Value::Integer(n), "toFloat") => Ok(Value::Float(n as f64)),
+                        (Value::Float(f), "toInt") => Ok(Value::Integer(f as i64)),
+                        (Value::Integer(n), "toString") => Ok(Value::String(n.to_string())),
+                        (Value::Float(f), "toString") => Ok(Value::String(f.to_string())),
+                        (Value::Boolean(b), "toString") => Ok(Value::String(b.to_string())),
+                        (Value::Char(c), "toString") => Ok(Value::String(c.to_string())),
+                        // Array methods
+                        (Value::Array(mut elements), "push") => {
+                            if _args.len() != 1 {
+                                return Err(RuntimeError::TypeMismatch("push() expects 1 argument".to_string()));
+                            }
+                            elements.push(_args[0].clone());
+                            // Return void (or the new length if we want to follow JS conventions)
+                            Ok(Value::Array(elements))
+                        },
+                        (Value::Array(mut elements), "pop") => {
+                            if elements.is_empty() {
+                                return Err(RuntimeError::TypeMismatch("pop() called on empty array".to_string()));
+                            }
+                            let last_element = elements.pop().unwrap();
+                            Ok(last_element)
+                        },
+                        // HashMap iteration methods
+                        (Value::HashMap(map), "keys") => {
+                            let keys: Vec<Value> = map.keys().map(|k| Value::String(k.clone())).collect();
+                            Ok(Value::Array(keys))
+                        },
+                        (Value::HashMap(map), "iter") => {
+                            let mut entries = Vec::new();
+                            for (key, value) in map.iter() {
+                                let entry = Value::Array(vec![Value::String(key.clone()), value.clone()]);
+                                entries.push(entry);
+                            }
+                            let it = IteratorState { items: entries, pos: 0 };
+                            Ok(Value::Iterator(Rc::new(RefCell::new(it))))
+                        },
+                        (Value::HashMap(map), "values") => {
+                            let values: Vec<Value> = map.values().cloned().collect();
+                            Ok(Value::Array(values))
+                        },
+                        (Value::HashMap(map), "size") => {
+                            Ok(Value::Integer(map.len() as i64))
+                        },
+                        (Value::HashMap(map), "entries") => {
+                            let mut entries = Vec::new();
+                            for (key, value) in map.iter() {
+                                // Create an array with [key, value] for each entry
+                                let entry = Value::Array(vec![Value::String(key.clone()), value.clone()]);
+                                entries.push(entry);
+                            }
+                            Ok(Value::Array(entries))
+                        },
+                        // Iterator next() on iterator objects
+                        (Value::Iterator(it_rc), "next") => {
+                            let mut it = it_rc.borrow_mut();
+                            if it.pos >= it.items.len() {
+                                Ok(Value::Void)
+                            } else {
+                                let v = it.items[it.pos].clone();
+                                it.pos += 1;
+                                Ok(v)
+                            }
+                        },
+                        (obj_val, method_name) => Err(RuntimeError::TypeMismatch(format!(
+                            "Method '{}' not found on type {:?}",
+                            method_name, obj_val
+                        )))
+                    }
+                } else {
+                    // Regular function call
+                    let callee_val = self.evaluate_expression(callee, env.clone())?;
+                    let mut args = Vec::new();
+                    for arg in arguments {
+                        args.push(self.evaluate_expression(arg, env.clone())?);
+                    }
+                    self.call_value(callee_val, args)
                 }
-                self.call_value(callee_val, args)
             }
             ExpressionKind::Binary {
                 left,
@@ -393,6 +988,73 @@ impl Interpreter {
                 let obj_val = self.evaluate_expression(object, env)?;
                 match (obj_val, member.as_str()) {
                     (Value::String(s), "length") => Ok(Value::Integer(s.len() as i64)),
+                    // Type conversion methods
+                    (Value::String(s), "toInt") => {
+                        match s.parse::<i64>() {
+                            Ok(num) => Ok(Value::Integer(num)),
+                            Err(_) => Err(RuntimeError::TypeMismatch(
+                                format!("Cannot convert string '{}' to integer", s)
+                            )),
+                        }
+                    },
+                    (Value::String(s), "toFloat") => {
+                        match s.parse::<f64>() {
+                            Ok(num) => Ok(Value::Float(num)),
+                            Err(_) => Err(RuntimeError::TypeMismatch(
+                                format!("Cannot convert string '{}' to float", s)
+                            )),
+                        }
+                    },
+                    (Value::Integer(n), "toFloat") => Ok(Value::Float(n as f64)),
+                    (Value::Float(f), "toInt") => Ok(Value::Integer(f as i64)),
+                    (Value::Integer(n), "toString") => Ok(Value::String(n.to_string())),
+                    (Value::Float(f), "toString") => Ok(Value::String(f.to_string())),
+                    (Value::Boolean(b), "toString") => Ok(Value::String(b.to_string())),
+                    (Value::Char(c), "toString") => Ok(Value::String(c.to_string())),
+                    // Array methods
+                    (Value::Array(_elements), "push") => {
+                        // For member access, we don't have arguments, so this would be an error
+                        Err(RuntimeError::TypeMismatch(
+                            "Cannot call push() without arguments via member access".to_string(),
+                        ))
+                    },
+                    (Value::Array(_elements), "pop") => {
+                        // For member access, this would be an error since pop() should be callable
+                        Err(RuntimeError::TypeMismatch(
+                            "Cannot call pop() via member access".to_string(),
+                        ))
+                    },
+                    // HashMap iteration methods
+                    (Value::HashMap(map), "keys") => {
+                        let keys: Vec<Value> = map.keys().map(|k| Value::String(k.clone())).collect();
+                        Ok(Value::Array(keys))
+                    },
+                    (Value::HashMap(map), "iter") => {
+                        // Create iterator over entries
+                        let mut entries = Vec::new();
+                        for (key, value) in map.iter() {
+                            let entry = Value::Array(vec![Value::String(key.clone()), value.clone()]);
+                            entries.push(entry);
+                        }
+                        let it = IteratorState { items: entries, pos: 0 };
+                        Ok(Value::Iterator(Rc::new(RefCell::new(it))))
+                    },
+                    (Value::HashMap(map), "values") => {
+                        let values: Vec<Value> = map.values().cloned().collect();
+                        Ok(Value::Array(values))
+                    },
+                    (Value::HashMap(map), "size") => {
+                        Ok(Value::Integer(map.len() as i64))
+                    },
+                    (Value::HashMap(map), "entries") => {
+                        let mut entries = Vec::new();
+                        for (key, value) in map.iter() {
+                            // Create an array with [key, value] for each entry
+                            let entry = Value::Array(vec![Value::String(key.clone()), value.clone()]);
+                            entries.push(entry);
+                        }
+                        Ok(Value::Array(entries))
+                    },
                     (val, _) => Err(RuntimeError::TypeMismatch(format!(
                         "Cannot access member '{}' on {:?}",
                         member, val

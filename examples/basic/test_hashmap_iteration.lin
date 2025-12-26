@@ -1,8 +1,15 @@
 fun main() {
-    // Test HashMap iteration functionality
-    // Note: This is pseudocode since we don't have high-level iteration syntax yet
-    // The runtime functions for keys, values, and size are available
+    // Test HashMap iteration methods
+    var map = {"key1": 100, "key2": 200, "key3": 300}
+    println("HashMap created")
     
-    println("HashMap iteration functions are now available in the runtime")
-    // This test would use the new functions: map.keys(), map.values(), map.size()
+    // Test size method
+    var map_size = map.size()
+    println("HashMap size: " + map_size.toString())
+    
+    // Test with different value types
+    var mixed_map = {"name": "Dotlin", "version": 1, "active": true}
+    println("Mixed type map size: " + mixed_map.size().toString())
+    
+    println("HashMap iteration completed successfully!")
 }

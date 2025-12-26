@@ -15,3 +15,6 @@ dotlin_codegen = { path = "../dotlin_codegen" }
 dotlin_typechecker = { path = "../dotlin_typechecker" }
 dotlin_interpreter = { path = "../dotlin_interpreter" }
 cc = "1.0"
+
+[dev-dependencies]
+serde_json = "1.0"

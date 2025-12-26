@@ -6,6 +6,7 @@ authors.workspace = true
 license.workspace = true
 
 [lib]
-crate-type = ["staticlib"]
+# Build as a cdylib on Windows so link.exe can see exported C symbols
+crate-type = ["cdylib"]
 
 [dependencies]

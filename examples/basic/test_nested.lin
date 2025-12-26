@@ -1,0 +1,8 @@
+fun main() {
+    if (true) {
+        var x = 5
+        println(x)
+    } else {
+        var y = 10
+    }
+}

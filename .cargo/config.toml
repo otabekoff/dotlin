@@ -1,0 +1,54 @@
+# Optimized Cargo configuration for fast builds
+[build]
+# Use sccache for shared compilation cache
+rustc-wrapper = "sccache"
+# Let Cargo auto-detect optimal job count based on CPU cores
+# jobs = 4  # Removed - let Cargo decide
+
+# Fast development builds with minimal debug info
+[profile.dev]
+opt-level = 0
+# Faster than "line-tables-only" for compilation, good enough for backtraces
+debug = 1
+debug-assertions = true
+overflow-checks = true
+lto = false
+panic = "unwind"
+incremental = true
+# Balance between compile speed and runtime performance
+# 256 is quite high - try 16 for better runtime performance during dev
+codegen-units = 16
+rpath = false
+
+# Don't include debug info for dependencies (big compile time saver)
+[profile.dev.package."*"]
+opt-level = 0
+debug = false
+
+# Optimize build scripts for faster execution
+[profile.dev.build-override]
+opt-level = 2
+debug = false
+
+# Optimized release builds
+[profile.release]
+opt-level = 3
+debug = false
+debug-assertions = false
+overflow-checks = false
+lto = "thin"  # "thin" is much faster than "true" with similar benefits
+panic = "abort"
+incremental = false
+codegen-units = 1
+strip = true
+
+[profile.release.build-override]
+opt-level = 2
+codegen-units = 1
+
+# Optional: Create a "fast-release" profile for testing
+# [profile.fast-release]
+# inherits = "release"
+# lto = false
+# codegen-units = 16
+# incremental = true

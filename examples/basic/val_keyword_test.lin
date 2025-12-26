@@ -1,0 +1,4 @@
+fun main() {
+    var val = 5
+    println(val)
+}

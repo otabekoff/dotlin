@@ -1,0 +1,18 @@
+fun main() {
+    var map = {"key1": 100, "key2": 200, "key3": 300}
+    println("HashMap created")
+    
+    // Test size method
+    var map_size = map.size()
+    println("HashMap size: " + map_size.toString())
+    
+    // Test entries method
+    var entries = map.entries()
+    println("Entries method called successfully")
+    
+    // Test with different value types
+    var mixed_map = {"name": "Dotlin", "version": 1, "active": true}
+    println("Mixed type map size: " + mixed_map.size().toString())
+    
+    println("HashMap entries test completed successfully!")
+}

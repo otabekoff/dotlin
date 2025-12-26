@@ -1,0 +1,35 @@
+name: Release — build and attach Windows runtime
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-and-attach:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+
+      - name: Build dotlin_runtime (release)
+        run: cargo build -p dotlin_runtime --release
+
+      - name: List lib directory
+        shell: pwsh
+        run: |
+          if (Test-Path lib) { Get-ChildItem -Path lib -Force } else { Write-Host "lib directory not found" }
+
+      - name: Upload assets to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            lib/dotlin_runtime.dll
+            lib/dotlin_runtime.lib
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

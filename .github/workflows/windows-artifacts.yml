@@ -1,0 +1,62 @@
+name: Build and upload Windows runtime artifacts
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-upload:
+    name: Build runtime and upload artifacts (Windows)
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        variant: [dynamic, static]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+
+      - name: Setup MSYS2 / MinGW (static)
+        if: ${{ matrix.variant == 'static' }}
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: |
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-crt-git
+            mingw-w64-x86_64-winpthreads-git
+            mingw-w64-x86_64-pkg-config
+            pkg-config
+
+      - name: Build dotlin_runtime (static)
+        if: ${{ matrix.variant == 'static' }}
+        shell: bash
+        env:
+          CC: x86_64-w64-mingw32-gcc
+          CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER: x86_64-w64-mingw32-gcc
+          PKG_CONFIG_PATH: /mingw64/lib/pkgconfig
+        run: |
+          rustup target add x86_64-pc-windows-gnu || true
+          cargo build -p dotlin_runtime --release --target x86_64-pc-windows-gnu
+
+      - name: Build dotlin_runtime (dynamic)
+        if: ${{ matrix.variant == 'dynamic' }}
+        run: cargo build -p dotlin_runtime --release
+
+      - name: Show lib directory
+        shell: pwsh
+        run: |
+          if (Test-Path lib) { Get-ChildItem -Path lib -Force } else { Write-Host "lib directory not found" }
+
+      - name: Upload runtime artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotlin-runtime-windows-${{ matrix.variant }}
+          path: lib/**

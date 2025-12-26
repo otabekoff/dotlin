@@ -18,6 +18,10 @@ pub enum Token {
     Else,
     #[token("while")]
     While,
+    #[token("for")]
+    For,
+    #[token("in")]
+    In,
 
     #[token("true")]
     True,

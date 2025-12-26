@@ -1,53 +1,31 @@
-// Comprehensive test of Dotlin features
+// Test file to verify array push/pop and HashMap entries methods work correctly
 fun main() {
-    // Test character literals
-    var charA = 'A'
-    var charB = 'B'
-    println("Character test: " + charA + ", " + charB)
+    // Test array push/pop
+    var arr = [1, 2, 3]
+    println("Original array length: " + arr.length().toString())
     
-    // Test float operations
-    var pi = 3.14159
-    var radius = 2.5
-    var area = pi * radius * radius
-    println("Circle area: " + area)
+    arr.push(4)
+    println("After push(4) length: " + arr.length().toString())
     
-    // Test string indexing
-    var greeting = "Hello"
-    var firstChar = greeting[0]  // Should be 'H'
-    var middleChar = greeting[2] // Should be 'l'
-    println("String indexing: " + firstChar + " and " + middleChar)
+    var popped = arr.pop()
+    println("Popped element: " + popped)
+    println("After pop() length: " + arr.length().toString())
     
-    // Test compound assignment operators
-    var num = 10
-    num += 5
-    println("After +=: " + num)
-    num -= 3
-    println("After -=: " + num)
-    num *= 2
-    println("After *=: " + num)
-    num /= 4
-    println("After /=: " + num)
+    // Test HashMap entries
+    var map = {"a": 1, "b": 2, "c": 3}
+    println("HashMap size: " + map.size().toString())
     
-    // Test logical operators with short-circuit
-    var result1 = false && println("This should not print")
-    var result2 = true || println("This should not print")
-    println("Short-circuit results: " + result1 + ", " + result2)
+    var entries = map.entries()
+    println("Entries count: " + entries.size().toString())
     
-    // Test arrays
-    var numbers = [1, 2, 3, 4, 5]
-    var first = numbers[0]
-    println("Array first element: " + first)
+    var keys = map.keys()
+    println("Keys count: " + keys.size().toString())
     
-    // Test HashMaps
-    var map = {"name": "Dotlin", "version": 2025}
-    var name = map["name"]
-    println("HashMap value: " + name)
+    var values = map.values()
+    println("Values count: " + values.size().toString())
     
-    // Test various operations together
-    var floatNum = 10.5
-    var intNum = 5
-    var mixedResult = floatNum + intNum
-    println("Mixed type operation: " + mixedResult)
+    var size = map.size()
+    println("Size: " + size)
     
-    println("All features working together successfully!")
+    println("All tests completed successfully!")
 }

@@ -1,0 +1,5 @@
+fun main() {
+    var map = {"key1": 100, "key2": 200}
+    var size = map.size()
+    println(size)
+}

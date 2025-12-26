@@ -54,6 +54,17 @@ pub enum Statement {
         condition: Expression,
         body: Box<Statement>,
     },
+    ForEach {
+        variable: ForEachTarget,
+        iterable: Expression,
+        body: Box<Statement>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum ForEachTarget {
+    Ident(String),
+    Tuple(Vec<String>),
 }
 
 #[derive(Debug, Clone, PartialEq)]

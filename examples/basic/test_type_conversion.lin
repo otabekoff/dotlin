@@ -1,0 +1,43 @@
+fun main() {
+    // Test string to int conversion
+    var str_num = "123"
+    var int_val = str_num.toInt()
+    println("String '123' to int: " + int_val.toString())
+    
+    // Test string to float conversion
+    var str_float = "45.67"
+    var float_val = str_float.toFloat()
+    println("String '45.67' to float: " + float_val.toString())
+    
+    // Test int to float conversion
+    var int_to_convert = 42
+    var float_from_int = int_to_convert.toFloat()
+    println("Int 42 to float: " + float_from_int.toString())
+    
+    // Test float to int conversion
+    var float_to_convert = 3.14
+    var int_from_float = float_to_convert.toInt()
+    println("Float 3.14 to int: " + int_from_float.toString())
+    
+    // Test int to string conversion
+    var int_to_string = 999
+    var str_from_int = int_to_string.toString()
+    println("Int 999 to string: " + str_from_int)
+    
+    // Test float to string conversion
+    var float_to_string = 2.718
+    var str_from_float = float_to_string.toString()
+    println("Float 2.718 to string: " + str_from_float)
+    
+    // Test boolean to string conversion
+    var bool_val = true
+    var str_from_bool = bool_val.toString()
+    println("Boolean true to string: " + str_from_bool)
+    
+    // Test char to string conversion
+    var char_val = 'X'
+    var str_from_char = char_val.toString()
+    println("Char 'X' to string: " + str_from_char)
+    
+    println("All type conversions completed successfully!")
+}
