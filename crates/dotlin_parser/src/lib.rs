@@ -292,10 +292,10 @@ impl<'a> Parser<'a> {
         if self.peek() == Some(&Token::Return) {
             self.advance();
             let mut value = None;
-            if let Some(token) = self.peek()
-                && token != &Token::RBrace
-            {
-                value = Some(self.parse_expression()?);
+            if let Some(token) = self.peek() {
+                if token != &Token::RBrace {
+                    value = Some(self.parse_expression()?);
+                }
             }
             return Ok(Statement::Return(value));
         }

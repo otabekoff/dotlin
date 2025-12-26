@@ -454,6 +454,7 @@ impl CodeGenerator {
         let mut sig_bool_to_string = self.module.make_signature();
         sig_bool_to_string.params.push(AbiParam::new(types::I8)); // boolean
         sig_bool_to_string.returns.push(AbiParam::new(types::I64)); // string_ptr
+        self.set_call_conv(&mut sig_bool_to_string);
         let bool_to_string = self
             .module
             .declare_function("dotlin_bool_to_string", Linkage::Import, &sig_bool_to_string)?;
@@ -463,6 +464,7 @@ impl CodeGenerator {
         let mut sig_char_to_string = self.module.make_signature();
         sig_char_to_string.params.push(AbiParam::new(types::I64)); // char as int
         sig_char_to_string.returns.push(AbiParam::new(types::I64)); // string_ptr
+        self.set_call_conv(&mut sig_char_to_string);
         let char_to_string = self
             .module
             .declare_function("dotlin_char_to_string", Linkage::Import, &sig_char_to_string)?;

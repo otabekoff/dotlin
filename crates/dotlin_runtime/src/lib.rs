@@ -1,12 +1,12 @@
 use std::alloc::{alloc, dealloc, Layout};
 use std::collections::HashMap as StdHashMap;
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn println_i64(val: i64) {
     println!("{}", val);
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn println_str(ptr: *const u8) {
     if ptr.is_null() {
         return;
@@ -20,7 +20,7 @@ pub extern "C" fn println_str(ptr: *const u8) {
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_string_concat(s1: *const u8, s2: *const u8) -> *const u8 {
     if s1.is_null() {
         return s2;
@@ -44,12 +44,12 @@ pub extern "C" fn dotlin_string_concat(s1: *const u8, s2: *const u8) -> *const u
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn println_f64(val: f64) {
     println!("{}", val);
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_string_compare(s1: *const u8, s2: *const u8) -> i64 {
     if s1.is_null() || s2.is_null() {
         if s1 == s2 {
@@ -77,7 +77,7 @@ pub struct DotlinArray {
     capacity: u64,
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_array_new(_element_size: u64, initial_capacity: u64) -> *mut DotlinArray {
     let capacity = if initial_capacity == 0 { 1 } else { initial_capacity }; // Ensure at least 1 element capacity
     let vec: Vec<u64> = vec![0; capacity as usize];
@@ -110,22 +110,22 @@ unsafe fn grow_array(old_ptr: *mut u64, old_size: usize, new_size: usize) -> *mu
 }
 
 // Math runtime functions
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_math_abs(val: f64) -> f64 {
     val.abs()
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_math_min(a: f64, b: f64) -> f64 {
     a.min(b)
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_math_max(a: f64, b: f64) -> f64 {
     a.max(b)
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_math_sqrt(val: f64) -> f64 {
     if val < 0.0 {
         std::f64::NAN
@@ -134,42 +134,42 @@ pub extern "C" fn dotlin_math_sqrt(val: f64) -> f64 {
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_math_pow(base: f64, exp: f64) -> f64 {
     base.powf(exp)
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_math_sin(val: f64) -> f64 {
     val.sin()
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_math_cos(val: f64) -> f64 {
     val.cos()
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_math_tan(val: f64) -> f64 {
     val.tan()
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_math_floor(val: f64) -> f64 {
     val.floor()
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_math_ceil(val: f64) -> f64 {
     val.ceil()
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_math_round(val: f64) -> f64 {
     val.round()
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_math_log(val: f64) -> f64 {
     if val <= 0.0 {
         std::f64::NAN
@@ -178,22 +178,22 @@ pub extern "C" fn dotlin_math_log(val: f64) -> f64 {
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_math_exp(val: f64) -> f64 {
     val.exp()
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_math_pi() -> f64 {
     std::f64::consts::PI
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_math_e() -> f64 {
     std::f64::consts::E
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_array_get(array_ptr: *mut DotlinArray, index: u64) -> u64 {
     if array_ptr.is_null() {
         return 0; // Error value
@@ -210,7 +210,7 @@ pub extern "C" fn dotlin_array_get(array_ptr: *mut DotlinArray, index: u64) -> u
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_array_set(array_ptr: *mut DotlinArray, index: u64, value: u64) {
     if array_ptr.is_null() {
         return;
@@ -237,7 +237,7 @@ pub extern "C" fn dotlin_array_set(array_ptr: *mut DotlinArray, index: u64, valu
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_array_length(array_ptr: *mut DotlinArray) -> u64 {
     if array_ptr.is_null() {
         return 0;
@@ -249,7 +249,7 @@ pub extern "C" fn dotlin_array_length(array_ptr: *mut DotlinArray) -> u64 {
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_array_push(array_ptr: *mut DotlinArray, value: u64) {
     if array_ptr.is_null() {
         return;
@@ -272,7 +272,7 @@ pub extern "C" fn dotlin_array_push(array_ptr: *mut DotlinArray, value: u64) {
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_array_pop(array_ptr: *mut DotlinArray) -> u64 {
     if array_ptr.is_null() {
         return 0; // Error value
@@ -298,7 +298,7 @@ pub struct DotlinHashMap {
     value_type_size: u64,
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_map_new() -> *mut DotlinHashMap {
     let map: StdHashMap<String, u64> = StdHashMap::new();
     let boxed_map = Box::new(map);
@@ -312,7 +312,7 @@ pub extern "C" fn dotlin_map_new() -> *mut DotlinHashMap {
     Box::into_raw(Box::new(hash_map))
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_map_get(map_ptr: *mut DotlinHashMap, key_ptr: *const u8) -> u64 {
     if map_ptr.is_null() || key_ptr.is_null() {
         return 0; // Default value for missing key
@@ -330,7 +330,7 @@ pub extern "C" fn dotlin_map_get(map_ptr: *mut DotlinHashMap, key_ptr: *const u8
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_map_set(map_ptr: *mut DotlinHashMap, key_ptr: *const u8, value: u64) {
     if map_ptr.is_null() || key_ptr.is_null() {
         return;
@@ -348,7 +348,7 @@ pub extern "C" fn dotlin_map_set(map_ptr: *mut DotlinHashMap, key_ptr: *const u8
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_map_remove(map_ptr: *mut DotlinHashMap, key_ptr: *const u8) -> u64 {
     if map_ptr.is_null() || key_ptr.is_null() {
         return 0;
@@ -366,7 +366,7 @@ pub extern "C" fn dotlin_map_remove(map_ptr: *mut DotlinHashMap, key_ptr: *const
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_map_contains(map_ptr: *mut DotlinHashMap, key_ptr: *const u8) -> u64 {
     if map_ptr.is_null() || key_ptr.is_null() {
         return 0;
@@ -384,7 +384,7 @@ pub extern "C" fn dotlin_map_contains(map_ptr: *mut DotlinHashMap, key_ptr: *con
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_map_free(map_ptr: *mut DotlinHashMap) {
     if map_ptr.is_null() {
         return;
@@ -397,7 +397,7 @@ pub extern "C" fn dotlin_map_free(map_ptr: *mut DotlinHashMap) {
 }
 
 // Type conversion runtime functions
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_string_to_int(str_ptr: *const u8) -> i64 {
     if str_ptr.is_null() {
         return 0; // Default value for error
@@ -413,7 +413,7 @@ pub extern "C" fn dotlin_string_to_int(str_ptr: *const u8) -> i64 {
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_string_to_float(str_ptr: *const u8) -> f64 {
     if str_ptr.is_null() {
         return 0.0; // Default value for error
@@ -429,17 +429,17 @@ pub extern "C" fn dotlin_string_to_float(str_ptr: *const u8) -> f64 {
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_int_to_float(val: i64) -> f64 {
     val as f64
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_float_to_int(val: f64) -> i64 {
     val as i64
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_to_string(val: i64) -> *const u8 {
     let s = val.to_string();
     
@@ -455,7 +455,7 @@ pub extern "C" fn dotlin_to_string(val: i64) -> *const u8 {
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_float_to_string(val: f64) -> *const u8 {
     let s = val.to_string();
     
@@ -471,7 +471,7 @@ pub extern "C" fn dotlin_float_to_string(val: f64) -> *const u8 {
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_bool_to_string(val: i8) -> *const u8 {
     let s = if val != 0 { "true".to_string() } else { "false".to_string() };
     
@@ -487,7 +487,7 @@ pub extern "C" fn dotlin_bool_to_string(val: i8) -> *const u8 {
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_char_to_string(val: i64) -> *const u8 {
     let c = val as u8 as char;
     let s = c.to_string();
@@ -505,7 +505,7 @@ pub extern "C" fn dotlin_char_to_string(val: i64) -> *const u8 {
 }
 
 // HashMap iteration functions
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_map_keys(map_ptr: *mut DotlinHashMap) -> *mut DotlinArray {
     if map_ptr.is_null() {
         return std::ptr::null_mut();
@@ -537,7 +537,7 @@ pub extern "C" fn dotlin_map_keys(map_ptr: *mut DotlinHashMap) -> *mut DotlinArr
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_map_values(map_ptr: *mut DotlinHashMap) -> *mut DotlinArray {
     if map_ptr.is_null() {
         return std::ptr::null_mut();
@@ -563,7 +563,7 @@ pub extern "C" fn dotlin_map_values(map_ptr: *mut DotlinHashMap) -> *mut DotlinA
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_map_size(map_ptr: *mut DotlinHashMap) -> u64 {
     if map_ptr.is_null() {
         return 0;
@@ -575,7 +575,7 @@ pub extern "C" fn dotlin_map_size(map_ptr: *mut DotlinHashMap) -> u64 {
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_map_entries(map_ptr: *mut DotlinHashMap) -> *mut DotlinArray {
     if map_ptr.is_null() {
         return std::ptr::null_mut();
@@ -615,7 +615,7 @@ pub struct DotlinIterator {
     pos: u64,
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_map_iter_new(map_ptr: *mut DotlinHashMap) -> *mut DotlinIterator {
     if map_ptr.is_null() {
         return std::ptr::null_mut();
@@ -625,7 +625,7 @@ pub extern "C" fn dotlin_map_iter_new(map_ptr: *mut DotlinHashMap) -> *mut Dotli
     Box::into_raw(Box::new(it))
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn dotlin_iterator_next(it_ptr: *mut DotlinIterator) -> u64 {
     if it_ptr.is_null() {
         return 0;
