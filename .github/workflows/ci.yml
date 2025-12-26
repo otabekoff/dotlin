@@ -23,6 +23,20 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+
+    - name: Ensure cargo cache directories exist (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: |
+        mkdir -p ~/.cargo/registry ~/.cargo/git target || true
+      shell: bash
+
+    - name: Ensure cargo cache directories exist (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        New-Item -ItemType Directory -Path "$env:USERPROFILE\.cargo\registry" -Force | Out-Null
+        New-Item -ItemType Directory -Path "$env:USERPROFILE\.cargo\git" -Force | Out-Null
+        New-Item -ItemType Directory -Path target -Force | Out-Null
+      shell: pwsh
     
     - name: Install Rust
       uses: actions-rs/toolchain@v1

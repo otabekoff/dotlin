@@ -349,9 +349,53 @@ fn test_basic_hello_world_codegen() {
 
     assert!(status.success(), "dotc failed to compile basic example");
 
-    let output = Command::new(&out_exe)
-        .output()
-        .expect("failed to run basic example");
+    // Ensure runtime DLL is available for the produced executable on Windows
+    if cfg!(target_os = "windows") {
+        let lib_dir = workspace_root.join("lib");
+        let _ = std::fs::create_dir_all(&lib_dir);
+
+        // Try to find a built dotlin_runtime DLL in usual target locations
+        let candidates = [
+            workspace_root.join("target").join("debug"),
+            workspace_root.join("target").join("debug").join("deps"),
+            workspace_root.join("target").join("release"),
+            workspace_root.join("target").join("release").join("deps"),
+        ];
+
+        for cand in &candidates {
+            if cand.exists() {
+                if let Ok(entries) = std::fs::read_dir(cand) {
+                    for ent in entries.flatten() {
+                        let p = ent.path();
+                        if let Some(n) = p.file_name().and_then(|s| s.to_str()) {
+                            let nl = n.to_ascii_lowercase();
+                            if nl.contains("dotlin_runtime") && nl.ends_with(".dll") {
+                                let _ = std::fs::copy(&p, lib_dir.join("dotlin_runtime.dll"));
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let mut cmd = Command::new(&out_exe);
+    // Ensure workspace lib/ is on PATH so Windows loader can find staged DLL
+    if cfg!(target_os = "windows") {
+        let mut path_entries: Vec<String> = Vec::new();
+        path_entries.push(workspace_root.join("lib").display().to_string());
+        if let Ok(path_var) = std::env::var("PATH") {
+            let mut entries = path_entries.join(";");
+            entries.push(';');
+            entries.push_str(&path_var);
+            cmd.env("PATH", entries);
+        } else {
+            cmd.env("PATH", path_entries.join(";"));
+        }
+    }
+
+    let output = cmd.output().expect("failed to run basic example");
 
     assert!(
         output.status.success(),
