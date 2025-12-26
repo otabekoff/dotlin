@@ -287,7 +287,10 @@ fn test_basic_hello_world_codegen() {
     let workspace_root = manifest.parent().unwrap().parent().unwrap();
 
     let src = workspace_root.join("test_basic_hello_world.lin");
-    let _ = std::fs::write(&src, r#"fun main() { println("Hello"); }"#);
+    let _ = std::fs::write(
+        &src,
+        "fun main() {\n  println(\"Hello\")\n}\n",
+    );
 
     let out_exe = workspace_root.join("test_basic_hello_world_out.exe");
 
