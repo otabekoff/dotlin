@@ -160,6 +160,22 @@ fn compile_and_run_iter_example() {
         .expect("failed to run compiled example");
 
     let stdout = str::from_utf8(&output.stdout).unwrap_or_default();
+    let stderr = str::from_utf8(&output.stderr).unwrap_or_default();
     // The program computes 1 + 2 = 3 and prints it
-    assert!(stdout.contains("3"), "unexpected stdout: {}", stdout);
+    if !stdout.contains("3") {
+        // Collect extra diagnostics for CI: exit code, stderr, and ldd output on unix
+        let status = output.status;
+        let mut diag = format!("unexpected stdout: {}\nexit: {:?}\nstderr: {}", stdout, status, stderr);
+        if !cfg!(target_os = "windows") {
+            if let Ok(ldd_out) = std::process::Command::new("ldd").arg(&out_exe).output() {
+                let ldd_stdout = String::from_utf8_lossy(&ldd_out.stdout);
+                let ldd_stderr = String::from_utf8_lossy(&ldd_out.stderr);
+                diag.push_str("\nldd stdout:\n");
+                diag.push_str(&ldd_stdout);
+                diag.push_str("\nldd stderr:\n");
+                diag.push_str(&ldd_stderr);
+            }
+        }
+        panic!("{}", diag);
+    }
 }
