@@ -39,7 +39,7 @@ fn main() {
             run_with_interpreter(input_path);
         } else {
             // Compile using the original method
-            let content = fs::read_to_string(&input_path).expect("Failed to read file");
+            let content = fs::read_to_string(input_path).expect("Failed to read file");
             let mut parser = DotlinParser::new(&content);
 
             match parser.parse_program() {

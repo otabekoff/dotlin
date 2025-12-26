@@ -203,7 +203,7 @@ fn compile_and_run_iter_tuple_example_codegen() {
         // Merge with existing PATH
         if let Ok(path_var) = std::env::var("PATH") {
             let mut entries = path_entries.join(";");
-            entries.push_str(";");
+            entries.push(';');
             entries.push_str(&path_var);
             cmd.env("PATH", entries);
         } else {
@@ -244,7 +244,7 @@ fn compile_and_run_iter_tuple_example_codegen() {
 
         eprintln!("\n--- Attempting to run with gdb (if available) ---");
         let _ = Command::new("gdb")
-            .args(&["-batch", "-ex", "run", "-ex", "bt", "--args"])
+            .args(["-batch", "-ex", "run", "-ex", "bt", "--args"])
             .arg(&out_exe)
             .status();
 

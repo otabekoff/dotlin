@@ -1,3 +1,4 @@
+#![allow(clippy::not_unsafe_ptr_arg_deref)]
 use std::alloc::{alloc, dealloc, Layout};
 use std::collections::HashMap as StdHashMap;
 
@@ -128,7 +129,7 @@ pub extern "C" fn dotlin_math_max(a: f64, b: f64) -> f64 {
 #[no_mangle]
 pub extern "C" fn dotlin_math_sqrt(val: f64) -> f64 {
     if val < 0.0 {
-        std::f64::NAN
+        f64::NAN
     } else {
         val.sqrt()
     }
@@ -172,7 +173,7 @@ pub extern "C" fn dotlin_math_round(val: f64) -> f64 {
 #[no_mangle]
 pub extern "C" fn dotlin_math_log(val: f64) -> f64 {
     if val <= 0.0 {
-        std::f64::NAN
+        f64::NAN
     } else {
         val.ln()
     }

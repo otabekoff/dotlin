@@ -24,6 +24,12 @@ pub struct TypeChecker {
     functions: HashMap<String, (Vec<Type>, Option<Type>)>,
 }
 
+impl Default for TypeChecker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TypeChecker {
     pub fn new() -> Self {
         let mut functions = HashMap::new();

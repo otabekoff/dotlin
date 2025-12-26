@@ -4,7 +4,6 @@ use std::collections::HashMap;
 use std::fs;
 
 use anyhow::Result;
-use toml;
 
 #[derive(Parser)]
 #[command(name = "dotpkg")]

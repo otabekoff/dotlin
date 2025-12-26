@@ -1,3 +1,5 @@
+#![allow(clippy::needless_borrow)]
+
 use cranelift_codegen::ir::{
     condcodes::{FloatCC, IntCC},
     types, AbiParam, InstBuilder, MemFlags, Signature, Value,
@@ -6,20 +8,22 @@ use cranelift_codegen::isa::CallConv;
 use cranelift_codegen::settings::{self, Configurable};
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext, Variable};
 use cranelift_module::{DataDescription, DataId, FuncId, Linkage, Module, ModuleError};
-use cranelift_native;
+// Some cranelift APIs require passing `&mut builder.func` repeatedly; many of
+// those call-sites trigger `clippy::needless_borrow`. The crate-level attribute
+// above enables tolerance for those warnings.
 use cranelift_object::{ObjectBuilder, ObjectModule};
 use dotlin_ast::*;
 use std::collections::HashMap;
 
 #[derive(Debug)]
 pub enum CompileError {
-    Module(ModuleError),
+    Module(Box<ModuleError>),
     UndefinedVariable(String),
 }
 
 impl From<ModuleError> for CompileError {
     fn from(e: ModuleError) -> Self {
-        CompileError::Module(e)
+        CompileError::Module(Box::new(e))
     }
 }
 
@@ -35,7 +39,7 @@ impl std::fmt::Display for CompileError {
 impl std::error::Error for CompileError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            CompileError::Module(e) => Some(e),
+            CompileError::Module(e) => Some(&**e),
             _ => None,
         }
     }
@@ -55,6 +59,12 @@ pub struct CodeGenerator {
     module: ObjectModule,
     functions: HashMap<String, (FuncId, Option<DotlinType>)>,
     strings: HashMap<String, DataId>,
+}
+
+impl Default for CodeGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl CodeGenerator {
@@ -697,9 +707,9 @@ impl CodeGenerator {
         }
 
         let product = self.module.finish();
-        Ok(product
+        product
             .emit()
-            .map_err(|e| CompileError::Module(ModuleError::Backend(anyhow::anyhow!("{:?}", e))))?)
+            .map_err(|e| CompileError::Module(Box::new(ModuleError::Backend(anyhow::anyhow!("{:?}", e)))))
     }
 
     fn compile_statement(
@@ -898,7 +908,7 @@ impl CodeGenerator {
                             let second_val = builder.inst_results(second_call)[0];
 
                             // Bind first and second
-                            if names.len() >= 1 {
+                            if !names.is_empty() {
                                 let v1 = Variable::from_u32(*var_index);
                                 *var_index += 1;
                                 builder.declare_var(v1, types::I64);
@@ -1144,10 +1154,10 @@ impl CodeGenerator {
                                 false,
                                 false,
                             )
-                            .map_err(CompileError::Module)?;
+                            .map_err(|e| CompileError::Module(Box::new(e)))?;
                         module
                             .define_data(id, &desc)
-                            .map_err(CompileError::Module)?;
+                            .map_err(|e| CompileError::Module(Box::new(e)))?;
                         strings.insert(s.to_string(), id);
                         id
                     };
@@ -1644,7 +1654,7 @@ impl CodeGenerator {
                 
                 // We need to determine if this is array or map indexing based on the type
                 // For now, we'll default to array indexing, but we'll need to handle both
-                let func_name = if array.resolved_type.as_ref().map_or(false, |t| {
+                let func_name = if array.resolved_type.as_ref().is_some_and(|t| {
                     matches!(t, Type::Map(_, _))
                 }) {
                     "dotlin_map_get"
@@ -1658,11 +1668,7 @@ impl CodeGenerator {
                 let results = builder.inst_results(call);
                 
                 // Return type depends on the operation - for now default to Int
-                let return_type = if func_name == "dotlin_map_get" {
-                    DotlinType::Int  // Maps return values, for now using Int as placeholder
-                } else {
-                    DotlinType::Int  // Arrays return element values
-                };
+                let return_type = DotlinType::Int;
                 
                 Ok((results[0], return_type))
             }

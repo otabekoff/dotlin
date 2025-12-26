@@ -1,7 +1,5 @@
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 use tower_lsp::lsp_types::*;
-use tokio;
-
 #[derive(Debug)]
 struct Backend {
     client: Client,

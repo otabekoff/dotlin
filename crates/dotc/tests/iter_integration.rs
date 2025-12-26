@@ -124,7 +124,7 @@ fn compile_and_run_iter_example() {
         path_entries.push(workspace_root.join("target").join("release").join("deps").display().to_string());
         if let Ok(path_var) = std::env::var("PATH") {
             let mut entries = path_entries.join(";");
-            entries.push_str(";");
+            entries.push(';');
             entries.push_str(&path_var);
             cmd.env("PATH", entries);
         } else {
@@ -139,7 +139,7 @@ fn compile_and_run_iter_example() {
         path_entries.push(workspace_root.join("target").join("release").join("deps").display().to_string());
         if let Ok(ld) = std::env::var("LD_LIBRARY_PATH") {
             let mut entries = path_entries.join(":");
-            entries.push_str(":");
+            entries.push(':');
             entries.push_str(&ld);
             cmd.env("LD_LIBRARY_PATH", entries);
         } else {

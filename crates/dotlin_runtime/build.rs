@@ -77,7 +77,7 @@ fn main() {
     visit_dir(&release_deps, &mut found_import, &mut found_dll);
 
     // Also check triple-specific layout (e.g., target/<triple>/release and deps)
-    if let Some(triple) = env::var("TARGET").ok() {
+    if let Ok(triple) = env::var("TARGET") {
         let triple_dir = target_dir.join(&triple).join("release");
         let triple_deps = triple_dir.join("deps");
         visit_dir(&triple_dir, &mut found_import, &mut found_dll);

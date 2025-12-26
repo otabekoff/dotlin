@@ -112,7 +112,7 @@ fn format_block(block: &Block, indent_level: usize) -> String {
 
 fn format_statement(stmt: &Statement, indent_level: usize) -> String {
     match stmt {
-        Statement::Expression(expr) => format!("{}", format_expression(expr, indent_level)),
+        Statement::Expression(expr) => format_expression(expr, indent_level),
         Statement::Block(block) => {
             let indent = "    ".repeat(indent_level);
             format!("{{\n{}\n{}}}", format_block(block, indent_level + 1), indent)
