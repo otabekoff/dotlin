@@ -176,44 +176,47 @@ fn compile_and_run_iter_example() {
                 diag.push_str(&ldd_stderr);
             }
             // If the process exited due to a signal (eg SIGSEGV), attempt further diagnostics
-            use std::os::unix::process::ExitStatusExt;
-            if let Some(sig) = status.signal() {
-                diag.push_str(&format!("\nprocess signaled: {}\n", sig));
-                // Try to run gdb to get a backtrace if available
-                if let Ok(gdb_out) = std::process::Command::new("gdb")
-                    .arg("--batch")
-                    .arg("-ex")
-                    .arg("set pagination off")
-                    .arg("-ex")
-                    .arg("run")
-                    .arg("-ex")
-                    .arg("bt")
-                    .arg("--args")
-                    .arg(&out_exe)
-                    .output()
-                {
-                    diag.push_str("\ngdb stdout:\n");
-                    diag.push_str(&String::from_utf8_lossy(&gdb_out.stdout));
-                    diag.push_str("\ngdb stderr:\n");
-                    diag.push_str(&String::from_utf8_lossy(&gdb_out.stderr));
-                }
+            #[cfg(unix)]
+            {
+                use std::os::unix::process::ExitStatusExt;
+                if let Some(sig) = status.signal() {
+                    diag.push_str(&format!("\nprocess signaled: {}\n", sig));
+                    // Try to run gdb to get a backtrace if available
+                    if let Ok(gdb_out) = std::process::Command::new("gdb")
+                        .arg("--batch")
+                        .arg("-ex")
+                        .arg("set pagination off")
+                        .arg("-ex")
+                        .arg("run")
+                        .arg("-ex")
+                        .arg("bt")
+                        .arg("--args")
+                        .arg(&out_exe)
+                        .output()
+                    {
+                        diag.push_str("\ngdb stdout:\n");
+                        diag.push_str(&String::from_utf8_lossy(&gdb_out.stdout));
+                        diag.push_str("\ngdb stderr:\n");
+                        diag.push_str(&String::from_utf8_lossy(&gdb_out.stderr));
+                    }
 
-                // Inspect any staged runtime libs
-                let lib_dir = workspace_root.join("lib");
-                if lib_dir.exists() {
-                    if let Ok(entries) = std::fs::read_dir(&lib_dir) {
-                        for ent in entries.flatten() {
-                            if let Ok(fname) = ent.file_name().into_string() {
-                                let ln = fname.to_ascii_lowercase();
-                                if ln.contains("dotlin_runtime") && (ln.ends_with(".so") || ln.ends_with(".dylib") || ln.ends_with(".a") ) {
-                                    let fpath = lib_dir.join(&fname);
-                                    if let Ok(out) = std::process::Command::new("readelf").arg("-Ws").arg(&fpath).output() {
-                                        diag.push_str(&format!("\nreadelf -Ws {} stdout:\n", fpath.display()));
-                                        diag.push_str(&String::from_utf8_lossy(&out.stdout));
-                                    }
-                                    if let Ok(out) = std::process::Command::new("objdump").arg("-T").arg(&fpath).output() {
-                                        diag.push_str(&format!("\nobjdump -T {} stdout:\n", fpath.display()));
-                                        diag.push_str(&String::from_utf8_lossy(&out.stdout));
+                    // Inspect any staged runtime libs
+                    let lib_dir = workspace_root.join("lib");
+                    if lib_dir.exists() {
+                        if let Ok(entries) = std::fs::read_dir(&lib_dir) {
+                            for ent in entries.flatten() {
+                                if let Ok(fname) = ent.file_name().into_string() {
+                                    let ln = fname.to_ascii_lowercase();
+                                    if ln.contains("dotlin_runtime") && (ln.ends_with(".so") || ln.ends_with(".dylib") || ln.ends_with(".a") ) {
+                                        let fpath = lib_dir.join(&fname);
+                                        if let Ok(out) = std::process::Command::new("readelf").arg("-Ws").arg(&fpath).output() {
+                                            diag.push_str(&format!("\nreadelf -Ws {} stdout:\n", fpath.display()));
+                                            diag.push_str(&String::from_utf8_lossy(&out.stdout));
+                                        }
+                                        if let Ok(out) = std::process::Command::new("objdump").arg("-T").arg(&fpath).output() {
+                                            diag.push_str(&format!("\nobjdump -T {} stdout:\n", fpath.display()));
+                                            diag.push_str(&String::from_utf8_lossy(&out.stdout));
+                                        }
                                     }
                                 }
                             }
