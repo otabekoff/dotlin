@@ -85,6 +85,43 @@ fn compile_and_run_iter_tuple_example_codegen() {
             .status()
             .expect("failed to run dotc");
 
+        // If dotc reported success but the output exe wasn't created, capture diagnostics.
+        if !out_exe.exists() {
+            eprintln!("Expected compiled exe not found: {:?}", out_exe);
+            // Re-run dotc to capture stdout/stderr for debugging
+            let out = Command::new("cargo")
+                .arg("run")
+                .arg("-p")
+                .arg("dotc")
+                .arg("--")
+                .arg(example.as_os_str())
+                .arg("-o")
+                .arg(out_exe.as_os_str())
+                .current_dir(workspace_root)
+                .output()
+                .expect("failed to run dotc for diagnostics");
+
+            eprintln!("dotc stdout:\n{}", String::from_utf8_lossy(&out.stdout));
+            eprintln!("dotc stderr:\n{}", String::from_utf8_lossy(&out.stderr));
+
+            // List workspace root and target folders for visibility
+            if let Ok(entries) = std::fs::read_dir(workspace_root) {
+                eprintln!("Workspace root listing:");
+                for ent in entries.flatten() {
+                    eprintln!(" - {:?}", ent.path());
+                }
+            }
+            let target_dir = workspace_root.join("target");
+            if let Ok(entries) = std::fs::read_dir(&target_dir) {
+                eprintln!("Target dir listing:");
+                for ent in entries.flatten() {
+                    eprintln!(" - {:?}", ent.path());
+                }
+            }
+
+            panic!("dotc did not produce expected executable: {:?}", out_exe);
+        }
+
         assert!(status.success(), "dotc failed to compile example");
 
     // Run the produced executable and capture stdout
