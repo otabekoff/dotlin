@@ -171,7 +171,47 @@ fn compile_and_run_iter_tuple_example_codegen() {
     let stdout = str::from_utf8(&output.stdout).unwrap_or_default();
     let stderr = str::from_utf8(&output.stderr).unwrap_or_default();
     let exit_code = output.status.code();
+
+    if !output.status.success() {
+        eprintln!("Compiled example failed to run. Exit: {:?}", exit_code);
+        eprintln!("Stdout:\n{}", stdout);
+        eprintln!("Stderr:\n{}", stderr);
+
+        // Show staged lib contents
+        eprintln!("Workspace lib dir: {:?}", lib_dir);
+        if let Ok(entries) = std::fs::read_dir(&lib_dir) {
+            for ent in entries.flatten() {
+                eprintln!(" - {:?}", ent.path());
+            }
+        }
+
+        // On Unix-like systems, print dynamic deps and examine staged libs
+        #[cfg(target_family = "unix")]
+        {
+            use std::process::Command as Cmd;
+            // ldd (Linux) or otool (macOS)
+            if cfg!(target_os = "macos") {
+                let _ = Cmd::new("otool").arg("-L").arg(&out_exe).status();
+            } else {
+                let _ = Cmd::new("ldd").arg(&out_exe).status();
+            }
+
+            if let Ok(entries) = std::fs::read_dir(&lib_dir) {
+                for ent in entries.flatten() {
+                    let p = ent.path();
+                    if p.is_file() {
+                        eprintln!("--- readelf -Ws {:?} ---", p);
+                        let _ = Cmd::new("readelf").arg("-Ws").arg(&p).status();
+                        eprintln!("--- objdump -T {:?} ---", p);
+                        let _ = Cmd::new("objdump").arg("-T").arg(&p).status();
+                    }
+                }
+            }
+        }
+
+        panic!("compiled example failed (exit code: {:?})", exit_code);
+    }
+
     // The program computes 10 + 20 = 30 and prints it
-    assert!(output.status.success(), "compiled example failed (exit code: {:?})\nstdout: {}\nstderr: {}", exit_code, stdout, stderr);
     assert!(stdout.contains("30"), "unexpected stdout: {}\nstderr: {}\nexit: {:?}", stdout, stderr, exit_code);
 }

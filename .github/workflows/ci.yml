@@ -70,7 +70,6 @@ jobs:
       if: runner.os == 'macOS'
       env:
         RUSTC_WRAPPER: ""
-        RUSTFLAGS: "-C relocation-model=pic"
       shell: bash
       run: |
         echo "Building dotlin_runtime to stage runtime artifacts (macos)"
@@ -117,8 +116,8 @@ jobs:
     - name: Run tests
       env:
         RUSTC_WRAPPER: ""
-        RUSTFLAGS: ${{ runner.os == 'macOS' && '-C relocation-model=pic' || '' }}
       run: cargo test --workspace --verbose
+      timeout-minutes: 30
     
     - name: Run clippy
       run: cargo clippy --workspace -- -D warnings
