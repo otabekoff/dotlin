@@ -173,7 +173,14 @@ fn compile_and_run_iter_tuple_example_codegen() {
     let exit_code = output.status.code();
 
     if !output.status.success() {
-        eprintln!("Compiled example failed to run. Exit: {:?}", exit_code);
+        eprintln!("=== Executable failed ===");
+        eprintln!("Exit status: {:?}", output.status);
+        eprintln!("Exit code: {:?}", output.status.code());
+        #[cfg(unix)]
+        {
+            use std::os::unix::process::ExitStatusExt;
+            eprintln!("Signal: {:?}", output.status.signal());
+        }
         eprintln!("Stdout:\n{}", stdout);
         eprintln!("Stderr:\n{}", stderr);
 
@@ -195,6 +202,9 @@ fn compile_and_run_iter_tuple_example_codegen() {
             } else {
                 let _ = Cmd::new("ldd").arg(&out_exe).status();
             }
+
+            // Show file information for architecture/calling-convention clues
+            let _ = Cmd::new("file").arg(&out_exe).status();
 
             if let Ok(entries) = std::fs::read_dir(&lib_dir) {
                 for ent in entries.flatten() {

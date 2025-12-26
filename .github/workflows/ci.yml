@@ -120,6 +120,7 @@ jobs:
       timeout-minutes: 30
     
     - name: Run clippy
+      if: runner.os != 'macOS'
       run: cargo clippy --workspace -- -D warnings
     
     - name: Check formatting

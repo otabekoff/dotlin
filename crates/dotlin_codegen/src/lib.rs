@@ -2,6 +2,7 @@ use cranelift_codegen::ir::{
     condcodes::{FloatCC, IntCC},
     types, AbiParam, InstBuilder, MemFlags, Signature, Value,
 };
+use cranelift_codegen::isa::CallConv;
 use cranelift_codegen::settings::{self, Configurable};
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext, Variable};
 use cranelift_module::{DataDescription, DataId, FuncId, Linkage, Module, ModuleError};
@@ -121,12 +122,34 @@ impl CodeGenerator {
         if let Some(ref ret_type) = func.return_type {
             sig.returns.push(AbiParam::new(Self::cl_type(ret_type)));
         }
+        // Ensure the generated function uses the system calling convention
+        #[cfg(target_os = "windows")]
+        {
+            sig.call_conv = CallConv::WindowsFastcall;
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            sig.call_conv = CallConv::SystemV;
+        }
+
         sig
+    }
+
+    fn set_call_conv(&self, sig: &mut Signature) {
+        #[cfg(target_os = "windows")]
+        {
+            sig.call_conv = CallConv::WindowsFastcall;
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            sig.call_conv = CallConv::SystemV;
+        }
     }
 
     pub fn compile_program(mut self, program: &Program) -> Result<Vec<u8>, CompileError> {
         let mut sig_i64 = self.module.make_signature();
         sig_i64.params.push(AbiParam::new(types::I64));
+        self.set_call_conv(&mut sig_i64);
         let println_i64 = self
             .module
             .declare_function("println_i64", Linkage::Import, &sig_i64)?;
@@ -135,6 +158,7 @@ impl CodeGenerator {
 
         let mut sig_str = self.module.make_signature();
         sig_str.params.push(AbiParam::new(types::I64));
+        self.set_call_conv(&mut sig_str);
         let println_str = self
             .module
             .declare_function("println_str", Linkage::Import, &sig_str)?;
@@ -145,6 +169,7 @@ impl CodeGenerator {
         sig_concat.params.push(AbiParam::new(types::I64));
         sig_concat.params.push(AbiParam::new(types::I64));
         sig_concat.returns.push(AbiParam::new(types::I64));
+        self.set_call_conv(&mut sig_concat);
         let string_concat =
             self.module
                 .declare_function("dotlin_string_concat", Linkage::Import, &sig_concat)?;
@@ -155,6 +180,7 @@ impl CodeGenerator {
 
         let mut sig_f64 = self.module.make_signature();
         sig_f64.params.push(AbiParam::new(types::F64));
+        self.set_call_conv(&mut sig_f64);
         let println_f64 = self
             .module
             .declare_function("println_f64", Linkage::Import, &sig_f64)?;
@@ -165,6 +191,7 @@ impl CodeGenerator {
         sig_cmp.params.push(AbiParam::new(types::I64));
         sig_cmp.params.push(AbiParam::new(types::I64));
         sig_cmp.returns.push(AbiParam::new(types::I64));
+        self.set_call_conv(&mut sig_cmp);
         let string_compare =
             self.module
                 .declare_function("dotlin_string_compare", Linkage::Import, &sig_cmp)?;
@@ -178,6 +205,7 @@ impl CodeGenerator {
         sig_array_new.params.push(AbiParam::new(types::I64)); // element_size
         sig_array_new.params.push(AbiParam::new(types::I64)); // capacity
         sig_array_new.returns.push(AbiParam::new(types::I64));
+        self.set_call_conv(&mut sig_array_new);
         let array_new = self
             .module
             .declare_function("dotlin_array_new", Linkage::Import, &sig_array_new)?;
@@ -188,6 +216,7 @@ impl CodeGenerator {
         sig_array_get.params.push(AbiParam::new(types::I64)); // array_ptr
         sig_array_get.params.push(AbiParam::new(types::I64)); // index
         sig_array_get.returns.push(AbiParam::new(types::I64));
+        self.set_call_conv(&mut sig_array_get);
         let array_get = self
             .module
             .declare_function("dotlin_array_get", Linkage::Import, &sig_array_get)?;
@@ -198,6 +227,7 @@ impl CodeGenerator {
         sig_array_set.params.push(AbiParam::new(types::I64)); // array_ptr
         sig_array_set.params.push(AbiParam::new(types::I64)); // index
         sig_array_set.params.push(AbiParam::new(types::I64)); // value
+        self.set_call_conv(&mut sig_array_set);
         let array_set = self
             .module
             .declare_function("dotlin_array_set", Linkage::Import, &sig_array_set)?;
@@ -207,6 +237,7 @@ impl CodeGenerator {
         let mut sig_array_length = self.module.make_signature();
         sig_array_length.params.push(AbiParam::new(types::I64)); // array_ptr
         sig_array_length.returns.push(AbiParam::new(types::I64));
+        self.set_call_conv(&mut sig_array_length);
         let array_length = self
             .module
             .declare_function("dotlin_array_length", Linkage::Import, &sig_array_length)?;
@@ -216,6 +247,7 @@ impl CodeGenerator {
         let mut sig_array_push = self.module.make_signature();
         sig_array_push.params.push(AbiParam::new(types::I64)); // array_ptr
         sig_array_push.params.push(AbiParam::new(types::I64)); // value
+        self.set_call_conv(&mut sig_array_push);
         let array_push = self
             .module
             .declare_function("dotlin_array_push", Linkage::Import, &sig_array_push)?;
@@ -225,6 +257,7 @@ impl CodeGenerator {
         let mut sig_array_pop = self.module.make_signature();
         sig_array_pop.params.push(AbiParam::new(types::I64)); // array_ptr
         sig_array_pop.returns.push(AbiParam::new(types::I64)); // value
+        self.set_call_conv(&mut sig_array_pop);
         let array_pop = self
             .module
             .declare_function("dotlin_array_pop", Linkage::Import, &sig_array_pop)?;
@@ -234,6 +267,7 @@ impl CodeGenerator {
         // HashMap functions
         let mut sig_map_new = self.module.make_signature();
         sig_map_new.returns.push(AbiParam::new(types::I64));
+        self.set_call_conv(&mut sig_map_new);
         let map_new = self
             .module
             .declare_function("dotlin_map_new", Linkage::Import, &sig_map_new)?;
@@ -244,6 +278,7 @@ impl CodeGenerator {
         sig_map_get.params.push(AbiParam::new(types::I64));
         sig_map_get.params.push(AbiParam::new(types::I64));
         sig_map_get.returns.push(AbiParam::new(types::I64));
+        self.set_call_conv(&mut sig_map_get);
         let map_get = self
             .module
             .declare_function("dotlin_map_get", Linkage::Import, &sig_map_get)?;
@@ -254,6 +289,7 @@ impl CodeGenerator {
         sig_map_set.params.push(AbiParam::new(types::I64));
         sig_map_set.params.push(AbiParam::new(types::I64));
         sig_map_set.params.push(AbiParam::new(types::I64));
+        self.set_call_conv(&mut sig_map_set);
         let map_set = self
             .module
             .declare_function("dotlin_map_set", Linkage::Import, &sig_map_set)?;
@@ -264,6 +300,7 @@ impl CodeGenerator {
         sig_map_remove.params.push(AbiParam::new(types::I64));
         sig_map_remove.params.push(AbiParam::new(types::I64));
         sig_map_remove.returns.push(AbiParam::new(types::I64));
+        self.set_call_conv(&mut sig_map_remove);
         let map_remove = self
             .module
             .declare_function("dotlin_map_remove", Linkage::Import, &sig_map_remove)?;
@@ -274,6 +311,7 @@ impl CodeGenerator {
         sig_map_contains.params.push(AbiParam::new(types::I64));
         sig_map_contains.params.push(AbiParam::new(types::I64));
         sig_map_contains.returns.push(AbiParam::new(types::I64));
+        self.set_call_conv(&mut sig_map_contains);
         let map_contains = self
             .module
             .declare_function("dotlin_map_contains", Linkage::Import, &sig_map_contains)?;
@@ -282,6 +320,7 @@ impl CodeGenerator {
         
         let mut sig_map_free = self.module.make_signature();
         sig_map_free.params.push(AbiParam::new(types::I64));
+        self.set_call_conv(&mut sig_map_free);
         let map_free = self
             .module
             .declare_function("dotlin_map_free", Linkage::Import, &sig_map_free)?;
@@ -292,6 +331,7 @@ impl CodeGenerator {
         let mut sig_map_keys = self.module.make_signature();
         sig_map_keys.params.push(AbiParam::new(types::I64)); // map_ptr
         sig_map_keys.returns.push(AbiParam::new(types::I64)); // array_ptr
+        self.set_call_conv(&mut sig_map_keys);
         let map_keys = self
             .module
             .declare_function("dotlin_map_keys", Linkage::Import, &sig_map_keys)?;
@@ -301,6 +341,7 @@ impl CodeGenerator {
         let mut sig_map_values = self.module.make_signature();
         sig_map_values.params.push(AbiParam::new(types::I64)); // map_ptr
         sig_map_values.returns.push(AbiParam::new(types::I64)); // array_ptr
+        self.set_call_conv(&mut sig_map_values);
         let map_values = self
             .module
             .declare_function("dotlin_map_values", Linkage::Import, &sig_map_values)?;
@@ -310,6 +351,7 @@ impl CodeGenerator {
         let mut sig_map_size = self.module.make_signature();
         sig_map_size.params.push(AbiParam::new(types::I64)); // map_ptr
         sig_map_size.returns.push(AbiParam::new(types::I64)); // size
+        self.set_call_conv(&mut sig_map_size);
         let map_size = self
             .module
             .declare_function("dotlin_map_size", Linkage::Import, &sig_map_size)?;
@@ -320,6 +362,7 @@ impl CodeGenerator {
         let mut sig_map_entries = self.module.make_signature();
         sig_map_entries.params.push(AbiParam::new(types::I64)); // map_ptr
         sig_map_entries.returns.push(AbiParam::new(types::I64)); // array_ptr
+        self.set_call_conv(&mut sig_map_entries);
         let map_entries = self
             .module
             .declare_function("dotlin_map_entries", Linkage::Import, &sig_map_entries)?;
@@ -330,6 +373,7 @@ impl CodeGenerator {
         let mut sig_map_iter_new = self.module.make_signature();
         sig_map_iter_new.params.push(AbiParam::new(types::I64)); // map_ptr
         sig_map_iter_new.returns.push(AbiParam::new(types::I64)); // iterator_ptr
+        self.set_call_conv(&mut sig_map_iter_new);
         let map_iter_new = self
             .module
             .declare_function("dotlin_map_iter_new", Linkage::Import, &sig_map_iter_new)?;
@@ -339,6 +383,7 @@ impl CodeGenerator {
         let mut sig_iterator_next = self.module.make_signature();
         sig_iterator_next.params.push(AbiParam::new(types::I64)); // iterator_ptr
         sig_iterator_next.returns.push(AbiParam::new(types::I64)); // value
+        self.set_call_conv(&mut sig_iterator_next);
         let iterator_next = self
             .module
             .declare_function("dotlin_iterator_next", Linkage::Import, &sig_iterator_next)?;
@@ -349,6 +394,7 @@ impl CodeGenerator {
         let mut sig_string_to_int = self.module.make_signature();
         sig_string_to_int.params.push(AbiParam::new(types::I64)); // string_ptr
         sig_string_to_int.returns.push(AbiParam::new(types::I64)); // integer result
+        self.set_call_conv(&mut sig_string_to_int);
         let string_to_int = self
             .module
             .declare_function("dotlin_string_to_int", Linkage::Import, &sig_string_to_int)?;
@@ -358,6 +404,7 @@ impl CodeGenerator {
         let mut sig_string_to_float = self.module.make_signature();
         sig_string_to_float.params.push(AbiParam::new(types::I64)); // string_ptr
         sig_string_to_float.returns.push(AbiParam::new(types::F64)); // float result
+        self.set_call_conv(&mut sig_string_to_float);
         let string_to_float = self
             .module
             .declare_function("dotlin_string_to_float", Linkage::Import, &sig_string_to_float)?;
@@ -367,6 +414,7 @@ impl CodeGenerator {
         let mut sig_int_to_float = self.module.make_signature();
         sig_int_to_float.params.push(AbiParam::new(types::I64)); // integer
         sig_int_to_float.returns.push(AbiParam::new(types::F64)); // float result
+        self.set_call_conv(&mut sig_int_to_float);
         let int_to_float = self
             .module
             .declare_function("dotlin_int_to_float", Linkage::Import, &sig_int_to_float)?;
@@ -376,6 +424,7 @@ impl CodeGenerator {
         let mut sig_float_to_int = self.module.make_signature();
         sig_float_to_int.params.push(AbiParam::new(types::F64)); // float
         sig_float_to_int.returns.push(AbiParam::new(types::I64)); // integer result
+        self.set_call_conv(&mut sig_float_to_int);
         let float_to_int = self
             .module
             .declare_function("dotlin_float_to_int", Linkage::Import, &sig_float_to_int)?;
@@ -385,6 +434,7 @@ impl CodeGenerator {
         let mut sig_to_string = self.module.make_signature();
         sig_to_string.params.push(AbiParam::new(types::I64)); // value
         sig_to_string.returns.push(AbiParam::new(types::I64)); // string_ptr
+        self.set_call_conv(&mut sig_to_string);
         let to_string = self
             .module
             .declare_function("dotlin_to_string", Linkage::Import, &sig_to_string)?;
@@ -394,6 +444,7 @@ impl CodeGenerator {
         let mut sig_float_to_string = self.module.make_signature();
         sig_float_to_string.params.push(AbiParam::new(types::F64)); // float
         sig_float_to_string.returns.push(AbiParam::new(types::I64)); // string_ptr
+        self.set_call_conv(&mut sig_float_to_string);
         let float_to_string = self
             .module
             .declare_function("dotlin_float_to_string", Linkage::Import, &sig_float_to_string)?;

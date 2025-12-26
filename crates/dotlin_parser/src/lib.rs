@@ -292,10 +292,10 @@ impl<'a> Parser<'a> {
         if self.peek() == Some(&Token::Return) {
             self.advance();
             let mut value = None;
-            if let Some(token) = self.peek() {
-                if token != &Token::RBrace {
-                    value = Some(self.parse_expression()?);
-                }
+            if let Some(token) = self.peek()
+                && token != &Token::RBrace
+            {
+                value = Some(self.parse_expression()?);
             }
             return Ok(Statement::Return(value));
         }
@@ -511,24 +511,19 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_unary(&mut self) -> Result<Expression, ParseError> {
-        if let Some(token) = self.peek() {
-            match token {
-                Token::Minus | Token::Not | Token::Increment | Token::Decrement => {
-                    let op = match self.advance().unwrap() {
-                        Token::Minus => UnaryOp::Minus,
-                        Token::Not => UnaryOp::Not,
-                        Token::Increment => UnaryOp::Increment,
-                        Token::Decrement => UnaryOp::Decrement,
-                        _ => unreachable!(),
-                    };
-                    let right = self.parse_unary()?;
-                    return Ok(Expression::new(ExpressionKind::Unary {
-                        operator: op,
-                        operand: right,
-                    }));
-                }
-                _ => {}
-            }
+        if let Some(Token::Minus | Token::Not | Token::Increment | Token::Decrement) = self.peek() {
+            let op = match self.advance().unwrap() {
+                Token::Minus => UnaryOp::Minus,
+                Token::Not => UnaryOp::Not,
+                Token::Increment => UnaryOp::Increment,
+                Token::Decrement => UnaryOp::Decrement,
+                _ => unreachable!(),
+            };
+            let right = self.parse_unary()?;
+            return Ok(Expression::new(ExpressionKind::Unary {
+                operator: op,
+                operand: right,
+            }));
         }
         self.parse_postfix()
     }
