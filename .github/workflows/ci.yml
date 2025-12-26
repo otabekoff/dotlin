@@ -55,9 +55,15 @@ jobs:
       run: |
         echo "Building dotlin_runtime to stage runtime artifacts (linux)"
         cargo build -p dotlin_runtime --release || true
+        cargo build -p dotlin_runtime || true
         mkdir -p lib || true
-        cp target/release/libdotlin_runtime.so lib/ 2>/dev/null || true
-        cp target/release/libdotlin_runtime.a lib/ 2>/dev/null || true
+        # Copy any matching shared or static libs from release/debug and deps
+        cp target/release/libdotlin_runtime*.so* lib/ 2>/dev/null || true
+        cp target/release/deps/libdotlin_runtime*.so* lib/ 2>/dev/null || true
+        cp target/debug/libdotlin_runtime*.so* lib/ 2>/dev/null || true
+        cp target/debug/deps/libdotlin_runtime*.so* lib/ 2>/dev/null || true
+        cp target/release/libdotlin_runtime*.a lib/ 2>/dev/null || true
+        cp target/debug/libdotlin_runtime*.a lib/ 2>/dev/null || true
         echo "Staged lib contents:"; ls -la lib || true
 
     - name: Build and stage runtime artifacts (macOS)
@@ -68,9 +74,14 @@ jobs:
       run: |
         echo "Building dotlin_runtime to stage runtime artifacts (macos)"
         cargo build -p dotlin_runtime --release || true
+        cargo build -p dotlin_runtime || true
         mkdir -p lib || true
-        cp target/release/libdotlin_runtime.dylib lib/ 2>/dev/null || true
-        cp target/release/libdotlin_runtime.a lib/ 2>/dev/null || true
+        cp target/release/libdotlin_runtime*.dylib* lib/ 2>/dev/null || true
+        cp target/release/deps/libdotlin_runtime*.dylib* lib/ 2>/dev/null || true
+        cp target/debug/libdotlin_runtime*.dylib* lib/ 2>/dev/null || true
+        cp target/debug/deps/libdotlin_runtime*.dylib* lib/ 2>/dev/null || true
+        cp target/release/libdotlin_runtime*.a lib/ 2>/dev/null || true
+        cp target/debug/libdotlin_runtime*.a lib/ 2>/dev/null || true
         echo "Staged lib contents:"; ls -la lib || true
 
     - name: Build and stage runtime artifacts (Windows)
@@ -82,13 +93,16 @@ jobs:
         echo "Building dotlin_runtime to stage runtime artifacts (windows)"
         cargo build -p dotlin_runtime --release || exit 0
         New-Item -ItemType Directory -Path lib -Force | Out-Null
-        $files = @(
-          'target\release\dotlin_runtime.dll',
-          'target\release\dotlin_runtime.lib',
-          'target\release\dotlin_runtime.dll.lib',
-          'target\release\deps\dotlin_runtime.dll'
+        $candidates = @(
+          'target\\release\\dotlin_runtime.dll',
+          'target\\release\\dotlin_runtime.lib',
+          'target\\release\\dotlin_runtime.dll.lib',
+          'target\\release\\deps\\dotlin_runtime.dll',
+          'target\\debug\\dotlin_runtime.dll',
+          'target\\debug\\dotlin_runtime.lib',
+          'target\\debug\\deps\\dotlin_runtime.dll'
         )
-        foreach ($f in $files) {
+        foreach ($f in $candidates) {
           if (Test-Path $f) {
             Copy-Item -Path $f -Destination lib -Force -ErrorAction SilentlyContinue
           }
