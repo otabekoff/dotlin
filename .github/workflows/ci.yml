@@ -46,6 +46,22 @@ jobs:
       with:
         path: target
         key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Build and stage runtime artifacts
+      env:
+        RUSTC_WRAPPER: ""
+      run: |
+        echo "Building dotlin_runtime to stage runtime artifacts"
+        cargo build -p dotlin_runtime --release || true
+        mkdir -p lib || true
+        if [ "${{ runner.os }}" = "Linux" ]; then
+          cp target/release/libdotlin_runtime.so lib/ 2>/dev/null || true
+          cp target/release/libdotlin_runtime.a lib/ 2>/dev/null || true
+        elif [ "${{ runner.os }}" = "macOS" ]; then
+          cp target/release/libdotlin_runtime.dylib lib/ 2>/dev/null || true
+          cp target/release/libdotlin_runtime.a lib/ 2>/dev/null || true
+        fi
+        echo "Staged lib contents:"; ls -la lib || true
     
     - name: Run tests
       env:
