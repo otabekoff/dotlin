@@ -35,23 +35,116 @@ impl TypeChecker {
         let mut functions = HashMap::new();
         // Built-ins
         functions.insert("println".to_string(), (vec![], None)); // Special handling
-        
+
         // Math functions
-        functions.insert("abs".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
-        functions.insert("min".to_string(), (vec![Type::Named("Float".to_string()), Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
-        functions.insert("max".to_string(), (vec![Type::Named("Float".to_string()), Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
-        functions.insert("sqrt".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
-        functions.insert("pow".to_string(), (vec![Type::Named("Float".to_string()), Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
-        functions.insert("sin".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
-        functions.insert("cos".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
-        functions.insert("tan".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
-        functions.insert("floor".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
-        functions.insert("ceil".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
-        functions.insert("round".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
-        functions.insert("log".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
-        functions.insert("exp".to_string(), (vec![Type::Named("Float".to_string())], Some(Type::Named("Float".to_string()))));
-        functions.insert("PI".to_string(), (vec![], Some(Type::Named("Float".to_string()))));
-        functions.insert("E".to_string(), (vec![], Some(Type::Named("Float".to_string()))));
+        functions.insert(
+            "abs".to_string(),
+            (
+                vec![Type::Named("Float".to_string())],
+                Some(Type::Named("Float".to_string())),
+            ),
+        );
+        functions.insert(
+            "min".to_string(),
+            (
+                vec![
+                    Type::Named("Float".to_string()),
+                    Type::Named("Float".to_string()),
+                ],
+                Some(Type::Named("Float".to_string())),
+            ),
+        );
+        functions.insert(
+            "max".to_string(),
+            (
+                vec![
+                    Type::Named("Float".to_string()),
+                    Type::Named("Float".to_string()),
+                ],
+                Some(Type::Named("Float".to_string())),
+            ),
+        );
+        functions.insert(
+            "sqrt".to_string(),
+            (
+                vec![Type::Named("Float".to_string())],
+                Some(Type::Named("Float".to_string())),
+            ),
+        );
+        functions.insert(
+            "pow".to_string(),
+            (
+                vec![
+                    Type::Named("Float".to_string()),
+                    Type::Named("Float".to_string()),
+                ],
+                Some(Type::Named("Float".to_string())),
+            ),
+        );
+        functions.insert(
+            "sin".to_string(),
+            (
+                vec![Type::Named("Float".to_string())],
+                Some(Type::Named("Float".to_string())),
+            ),
+        );
+        functions.insert(
+            "cos".to_string(),
+            (
+                vec![Type::Named("Float".to_string())],
+                Some(Type::Named("Float".to_string())),
+            ),
+        );
+        functions.insert(
+            "tan".to_string(),
+            (
+                vec![Type::Named("Float".to_string())],
+                Some(Type::Named("Float".to_string())),
+            ),
+        );
+        functions.insert(
+            "floor".to_string(),
+            (
+                vec![Type::Named("Float".to_string())],
+                Some(Type::Named("Float".to_string())),
+            ),
+        );
+        functions.insert(
+            "ceil".to_string(),
+            (
+                vec![Type::Named("Float".to_string())],
+                Some(Type::Named("Float".to_string())),
+            ),
+        );
+        functions.insert(
+            "round".to_string(),
+            (
+                vec![Type::Named("Float".to_string())],
+                Some(Type::Named("Float".to_string())),
+            ),
+        );
+        functions.insert(
+            "log".to_string(),
+            (
+                vec![Type::Named("Float".to_string())],
+                Some(Type::Named("Float".to_string())),
+            ),
+        );
+        functions.insert(
+            "exp".to_string(),
+            (
+                vec![Type::Named("Float".to_string())],
+                Some(Type::Named("Float".to_string())),
+            ),
+        );
+        functions.insert(
+            "PI".to_string(),
+            (vec![], Some(Type::Named("Float".to_string()))),
+        );
+        functions.insert(
+            "E".to_string(),
+            (vec![], Some(Type::Named("Float".to_string()))),
+        );
 
         Self {
             scopes: vec![HashMap::new()],
@@ -193,7 +286,10 @@ impl TypeChecker {
                                         // If two names, assign key and value types respectively
                                         if names.len() == 2 {
                                             self.define_var(names[0].clone(), (*key_type).clone());
-                                            self.define_var(names[1].clone(), (*value_type).clone());
+                                            self.define_var(
+                                                names[1].clone(),
+                                                (*value_type).clone(),
+                                            );
                                         } else {
                                             // Fallback: assign key type to all names
                                             for n in names {
@@ -229,10 +325,12 @@ impl TypeChecker {
                         // For now, assume iterating over keys
                         *key_type
                     }
-                    _ => return Err(TypeError::Mismatch {
-                        expected: Type::Array(Box::new(Type::Named("Int".to_string()))),
-                        found: iterable_type,
-                    }),
+                    _ => {
+                        return Err(TypeError::Mismatch {
+                            expected: Type::Array(Box::new(Type::Named("Int".to_string()))),
+                            found: iterable_type,
+                        })
+                    }
                 };
 
                 // Create a new scope for the for-each loop
@@ -292,8 +390,14 @@ impl TypeChecker {
                 let rt = self.check_expression(right)?;
 
                 match operator {
-                    BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul | BinaryOp::Div |
-                    BinaryOp::PlusEqual | BinaryOp::MinusEqual | BinaryOp::StarEqual | BinaryOp::SlashEqual => {
+                    BinaryOp::Add
+                    | BinaryOp::Sub
+                    | BinaryOp::Mul
+                    | BinaryOp::Div
+                    | BinaryOp::PlusEqual
+                    | BinaryOp::MinusEqual
+                    | BinaryOp::StarEqual
+                    | BinaryOp::SlashEqual => {
                         if lt == Type::Named("String".to_string())
                             && rt == Type::Named("String".to_string())
                             && matches!(operator, BinaryOp::Add)
@@ -386,38 +490,62 @@ impl TypeChecker {
                     // We need to handle mutability properly
                     let mut obj_expr = (*object).clone();
                     let obj_typ = self.check_expression(&mut obj_expr)?;
-                    
+
                     // Handle type conversion methods and HashMap iteration methods
                     match (&obj_typ, member.as_str()) {
                         // String conversion methods
-                        (Type::Named(name), "toInt") if name == "String" => Type::Named("Int".to_string()),
-                        (Type::Named(name), "toFloat") if name == "String" => Type::Named("Float".to_string()),
-                        
+                        (Type::Named(name), "toInt") if name == "String" => {
+                            Type::Named("Int".to_string())
+                        }
+                        (Type::Named(name), "toFloat") if name == "String" => {
+                            Type::Named("Float".to_string())
+                        }
+
                         // Numeric conversion methods
-                        (Type::Named(name), "toFloat") if name == "Int" => Type::Named("Float".to_string()),
-                        (Type::Named(name), "toInt") if name == "Float" => Type::Named("Int".to_string()),
-                        
+                        (Type::Named(name), "toFloat") if name == "Int" => {
+                            Type::Named("Float".to_string())
+                        }
+                        (Type::Named(name), "toInt") if name == "Float" => {
+                            Type::Named("Int".to_string())
+                        }
+
                         // To string methods
-                        (Type::Named(name), "toString") if name == "Int" => Type::Named("String".to_string()),
-                        (Type::Named(name), "toString") if name == "Float" => Type::Named("String".to_string()),
-                        (Type::Named(name), "toString") if name == "Boolean" => Type::Named("String".to_string()),
-                        (Type::Named(name), "toString") if name == "Char" => Type::Named("String".to_string()),
-                        
+                        (Type::Named(name), "toString") if name == "Int" => {
+                            Type::Named("String".to_string())
+                        }
+                        (Type::Named(name), "toString") if name == "Float" => {
+                            Type::Named("String".to_string())
+                        }
+                        (Type::Named(name), "toString") if name == "Boolean" => {
+                            Type::Named("String".to_string())
+                        }
+                        (Type::Named(name), "toString") if name == "Char" => {
+                            Type::Named("String".to_string())
+                        }
+
                         // Array methods
                         (Type::Array(_), "push") => Type::Named("Int".to_string()), // returns void but using Int as placeholder
                         (Type::Array(_), "pop") => Type::Named("Int".to_string()), // returns the popped element
-                        
+
                         // HashMap iteration methods
-                        (Type::Map(_, _), "keys") => Type::Array(Box::new(Type::Named("String".to_string()))), // Returns array of keys
-                        (Type::Map(_, _), "values") => Type::Array(Box::new(Type::Named("Int".to_string()))), // Returns array of values (for now)
+                        (Type::Map(_, _), "keys") => {
+                            Type::Array(Box::new(Type::Named("String".to_string())))
+                        } // Returns array of keys
+                        (Type::Map(_, _), "values") => {
+                            Type::Array(Box::new(Type::Named("Int".to_string())))
+                        } // Returns array of values (for now)
                         (Type::Map(_, _), "size") => Type::Named("Int".to_string()), // Returns size as int
-                        (Type::Map(_, _), "entries") => Type::Array(Box::new(Type::Named("Int".to_string()))), // Returns array of alternating key-value pairs (for now)
-                        
+                        (Type::Map(_, _), "entries") => {
+                            Type::Array(Box::new(Type::Named("Int".to_string())))
+                        } // Returns array of alternating key-value pairs (for now)
+
                         // Undefined method
-                        (obj_type, method_name) => return Err(TypeError::UndefinedMember {
-                            typ: obj_type.clone(),
-                            member: method_name.to_string(),
-                        }),
+                        (obj_type, method_name) => {
+                            return Err(TypeError::UndefinedMember {
+                                typ: obj_type.clone(),
+                                member: method_name.to_string(),
+                            })
+                        }
                     }
                 } else if let ExpressionKind::Variable(name) = &*callee.kind {
                     // Regular function call
@@ -458,33 +586,59 @@ impl TypeChecker {
                 let obj_typ = self.check_expression(object)?;
                 match (&obj_typ, member.as_str()) {
                     // String length property
-                    (Type::Named(name), "length") if name == "String" => Type::Named("Int".to_string()),
-                    
+                    (Type::Named(name), "length") if name == "String" => {
+                        Type::Named("Int".to_string())
+                    }
+
                     // Type conversion methods
-                    (Type::Named(name), "toInt") if name == "String" => Type::Named("Int".to_string()),
-                    (Type::Named(name), "toFloat") if name == "String" => Type::Named("Float".to_string()),
-                    (Type::Named(name), "toFloat") if name == "Int" => Type::Named("Float".to_string()),
-                    (Type::Named(name), "toInt") if name == "Float" => Type::Named("Int".to_string()),
-                    (Type::Named(name), "toString") if name == "Int" => Type::Named("String".to_string()),
-                    (Type::Named(name), "toString") if name == "Float" => Type::Named("String".to_string()),
-                    (Type::Named(name), "toString") if name == "Boolean" => Type::Named("String".to_string()),
-                    (Type::Named(name), "toString") if name == "Char" => Type::Named("String".to_string()),
-                    
+                    (Type::Named(name), "toInt") if name == "String" => {
+                        Type::Named("Int".to_string())
+                    }
+                    (Type::Named(name), "toFloat") if name == "String" => {
+                        Type::Named("Float".to_string())
+                    }
+                    (Type::Named(name), "toFloat") if name == "Int" => {
+                        Type::Named("Float".to_string())
+                    }
+                    (Type::Named(name), "toInt") if name == "Float" => {
+                        Type::Named("Int".to_string())
+                    }
+                    (Type::Named(name), "toString") if name == "Int" => {
+                        Type::Named("String".to_string())
+                    }
+                    (Type::Named(name), "toString") if name == "Float" => {
+                        Type::Named("String".to_string())
+                    }
+                    (Type::Named(name), "toString") if name == "Boolean" => {
+                        Type::Named("String".to_string())
+                    }
+                    (Type::Named(name), "toString") if name == "Char" => {
+                        Type::Named("String".to_string())
+                    }
+
                     // Array methods
                     (Type::Array(_), "push") => Type::Named("Int".to_string()), // returns void but using Int as placeholder
                     (Type::Array(_), "pop") => Type::Named("Int".to_string()), // returns the popped value
-                    
+
                     // HashMap iteration methods
-                    (Type::Map(_, _), "keys") => Type::Array(Box::new(Type::Named("String".to_string()))), // Returns array of keys
-                    (Type::Map(_, _), "values") => Type::Array(Box::new(Type::Named("Int".to_string()))), // Returns array of values (for now)
+                    (Type::Map(_, _), "keys") => {
+                        Type::Array(Box::new(Type::Named("String".to_string())))
+                    } // Returns array of keys
+                    (Type::Map(_, _), "values") => {
+                        Type::Array(Box::new(Type::Named("Int".to_string())))
+                    } // Returns array of values (for now)
                     (Type::Map(_, _), "size") => Type::Named("Int".to_string()), // Returns size as int
-                    (Type::Map(_, _), "entries") => Type::Array(Box::new(Type::Named("Int".to_string()))), // Returns array of alternating key-value pairs (for now)
-                    
+                    (Type::Map(_, _), "entries") => {
+                        Type::Array(Box::new(Type::Named("Int".to_string())))
+                    } // Returns array of alternating key-value pairs (for now)
+
                     // Undefined member access
-                    _ => return Err(TypeError::UndefinedMember {
-                        typ: obj_typ,
-                        member: member.clone(),
-                    }),
+                    _ => {
+                        return Err(TypeError::UndefinedMember {
+                            typ: obj_typ,
+                            member: member.clone(),
+                        })
+                    }
                 }
             }
             ExpressionKind::ArrayLiteral { elements } => {
@@ -508,7 +662,7 @@ impl TypeChecker {
             ExpressionKind::Index { array, index } => {
                 let arr_typ = self.check_expression(array)?;
                 let idx_typ = self.check_expression(index)?;
-                
+
                 match &arr_typ {
                     Type::Array(element_type) => {
                         // Array indexing: index must be Int
@@ -560,12 +714,12 @@ impl TypeChecker {
                     let (first_key, first_val) = &mut pairs[0];
                     let key_type = self.check_expression(first_key)?;
                     let value_type = self.check_expression(first_val)?;
-                    
+
                     // Check that all other pairs have consistent types
                     for (key, val) in pairs.iter_mut().skip(1) {
                         let k_type = self.check_expression(key)?;
                         let v_type = self.check_expression(val)?;
-                        
+
                         if k_type != key_type {
                             return Err(TypeError::Mismatch {
                                 expected: key_type.clone(),
@@ -579,7 +733,7 @@ impl TypeChecker {
                             });
                         }
                     }
-                    
+
                     Type::Map(Box::new(key_type), Box::new(value_type))
                 }
             }

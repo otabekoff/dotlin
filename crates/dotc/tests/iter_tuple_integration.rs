@@ -1,5 +1,5 @@
-use std::process::Command;
 use std::path::PathBuf;
+use std::process::Command;
 use std::str;
 
 #[test]
@@ -17,7 +17,14 @@ fn compile_and_run_iter_tuple_example() {
     let out_exe = workspace_root.join("test_iter_tuple_out.exe");
 
     let mut cmd = Command::new("cargo");
-    cmd.arg("run").arg("-p").arg("dotc").arg("--").arg(example.as_os_str()).arg("-o").arg(out_exe.as_os_str()).current_dir(workspace_root);
+    cmd.arg("run")
+        .arg("-p")
+        .arg("dotc")
+        .arg("--")
+        .arg(example.as_os_str())
+        .arg("-o")
+        .arg(out_exe.as_os_str())
+        .current_dir(workspace_root);
 
     // If running on CI or on macOS arm64, only compile (don't link/run)
     let is_ci = std::env::var("GITHUB_ACTIONS").is_ok() || std::env::var("CI").is_ok();

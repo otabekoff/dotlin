@@ -36,17 +36,23 @@ fn compile_and_run_iter_example() {
                 if val.get("reason").and_then(|r| r.as_str()) == Some("compiler-artifact") {
                     if let Some(filenames) = val.get("filenames").and_then(|f| f.as_array()) {
                         for fname in filenames {
-                                    if let Some(path_str) = fname.as_str() {
-                                    let p = std::path::PathBuf::from(path_str);
-                                    if let Some(name) = p.file_name().and_then(|n| n.to_str()) {
-                                        let ln = name.to_ascii_lowercase();
-                                        // Accept MSVC import libs, DLLs, Unix shared libs, macOS dylibs, and static archives
-                                        if ln.contains("dotlin_runtime") && (ln.ends_with(".lib") || ln.ends_with(".dll") || ln.ends_with(".so") || ln.ends_with(".dylib") || ln.ends_with(".a")) {
-                                            let _ = std::fs::copy(&p, lib_dir.join(name));
-                                            copied.push(name.to_string());
-                                        }
+                            if let Some(path_str) = fname.as_str() {
+                                let p = std::path::PathBuf::from(path_str);
+                                if let Some(name) = p.file_name().and_then(|n| n.to_str()) {
+                                    let ln = name.to_ascii_lowercase();
+                                    // Accept MSVC import libs, DLLs, Unix shared libs, macOS dylibs, and static archives
+                                    if ln.contains("dotlin_runtime")
+                                        && (ln.ends_with(".lib")
+                                            || ln.ends_with(".dll")
+                                            || ln.ends_with(".so")
+                                            || ln.ends_with(".dylib")
+                                            || ln.ends_with(".a"))
+                                    {
+                                        let _ = std::fs::copy(&p, lib_dir.join(name));
+                                        copied.push(name.to_string());
                                     }
                                 }
+                            }
                         }
                     }
                 }
@@ -70,7 +76,10 @@ fn compile_and_run_iter_example() {
             if alt2.exists() || alt3.exists() || alt4.exists() {
                 // nothing to do, linker will find these in lib/
             } else {
-                panic!("dotlin_runtime import not found after build. copied: {:?}; cargo stdout: {}", copied, stdout_str);
+                panic!(
+                    "dotlin_runtime import not found after build. copied: {:?}; cargo stdout: {}",
+                    copied, stdout_str
+                );
             }
         }
     }
@@ -120,8 +129,21 @@ fn compile_and_run_iter_example() {
         // Add workspace lib and candidate target release dirs to PATH
         let mut path_entries: Vec<String> = Vec::new();
         path_entries.push(workspace_root.join("lib").display().to_string());
-        path_entries.push(workspace_root.join("target").join("release").display().to_string());
-        path_entries.push(workspace_root.join("target").join("release").join("deps").display().to_string());
+        path_entries.push(
+            workspace_root
+                .join("target")
+                .join("release")
+                .display()
+                .to_string(),
+        );
+        path_entries.push(
+            workspace_root
+                .join("target")
+                .join("release")
+                .join("deps")
+                .display()
+                .to_string(),
+        );
         if let Ok(path_var) = std::env::var("PATH") {
             let mut entries = path_entries.join(";");
             entries.push(';');
@@ -135,8 +157,21 @@ fn compile_and_run_iter_example() {
     if !cfg!(target_os = "windows") {
         let mut path_entries: Vec<String> = Vec::new();
         path_entries.push(workspace_root.join("lib").display().to_string());
-        path_entries.push(workspace_root.join("target").join("release").display().to_string());
-        path_entries.push(workspace_root.join("target").join("release").join("deps").display().to_string());
+        path_entries.push(
+            workspace_root
+                .join("target")
+                .join("release")
+                .display()
+                .to_string(),
+        );
+        path_entries.push(
+            workspace_root
+                .join("target")
+                .join("release")
+                .join("deps")
+                .display()
+                .to_string(),
+        );
         if let Ok(ld) = std::env::var("LD_LIBRARY_PATH") {
             let mut entries = path_entries.join(":");
             entries.push(':');
@@ -151,18 +186,17 @@ fn compile_and_run_iter_example() {
         {
             use std::os::unix::fs::PermissionsExt;
             if let Ok(metadata) = std::fs::metadata(&out_exe) {
-                    let perms = metadata.permissions();
-                    let mode = perms.mode();
-                    if mode & 0o100 == 0 {
-                        let _ = std::fs::set_permissions(&out_exe, std::fs::Permissions::from_mode(0o755));
-                    }
+                let perms = metadata.permissions();
+                let mode = perms.mode();
+                if mode & 0o100 == 0 {
+                    let _ =
+                        std::fs::set_permissions(&out_exe, std::fs::Permissions::from_mode(0o755));
                 }
+            }
         }
     }
 
-    let output = cmd
-        .output()
-        .expect("failed to run compiled example");
+    let output = cmd.output().expect("failed to run compiled example");
 
     let stdout = str::from_utf8(&output.stdout).unwrap_or_default();
     let stderr = str::from_utf8(&output.stderr).unwrap_or_default();
@@ -170,7 +204,10 @@ fn compile_and_run_iter_example() {
     if !stdout.contains("3") {
         // Collect extra diagnostics for CI: exit code, stderr, and ldd output on unix
         let status = output.status;
-        let mut diag = format!("unexpected stdout: {}\nexit: {:?}\nstderr: {}", stdout, status, stderr);
+        let mut diag = format!(
+            "unexpected stdout: {}\nexit: {:?}\nstderr: {}",
+            stdout, status, stderr
+        );
         if !cfg!(target_os = "windows") {
             if let Ok(ldd_out) = std::process::Command::new("ldd").arg(&out_exe).output() {
                 let ldd_stdout = String::from_utf8_lossy(&ldd_out.stdout);
@@ -212,14 +249,32 @@ fn compile_and_run_iter_example() {
                             for ent in entries.flatten() {
                                 if let Ok(fname) = ent.file_name().into_string() {
                                     let ln = fname.to_ascii_lowercase();
-                                    if ln.contains("dotlin_runtime") && (ln.ends_with(".so") || ln.ends_with(".dylib") || ln.ends_with(".a") ) {
+                                    if ln.contains("dotlin_runtime")
+                                        && (ln.ends_with(".so")
+                                            || ln.ends_with(".dylib")
+                                            || ln.ends_with(".a"))
+                                    {
                                         let fpath = lib_dir.join(&fname);
-                                        if let Ok(out) = std::process::Command::new("readelf").arg("-Ws").arg(&fpath).output() {
-                                            diag.push_str(&format!("\nreadelf -Ws {} stdout:\n", fpath.display()));
+                                        if let Ok(out) = std::process::Command::new("readelf")
+                                            .arg("-Ws")
+                                            .arg(&fpath)
+                                            .output()
+                                        {
+                                            diag.push_str(&format!(
+                                                "\nreadelf -Ws {} stdout:\n",
+                                                fpath.display()
+                                            ));
                                             diag.push_str(&String::from_utf8_lossy(&out.stdout));
                                         }
-                                        if let Ok(out) = std::process::Command::new("objdump").arg("-T").arg(&fpath).output() {
-                                            diag.push_str(&format!("\nobjdump -T {} stdout:\n", fpath.display()));
+                                        if let Ok(out) = std::process::Command::new("objdump")
+                                            .arg("-T")
+                                            .arg(&fpath)
+                                            .output()
+                                        {
+                                            diag.push_str(&format!(
+                                                "\nobjdump -T {} stdout:\n",
+                                                fpath.display()
+                                            ));
                                             diag.push_str(&String::from_utf8_lossy(&out.stdout));
                                         }
                                     }

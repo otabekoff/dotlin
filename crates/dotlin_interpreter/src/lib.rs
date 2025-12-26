@@ -48,13 +48,17 @@ mod tests {
         let m_decl = Statement::VariableDecl {
             name: "m".to_string(),
             typ: None,
-            initializer: Some(Expression::new(ExpressionKind::HashMapLiteral { pairs: map_pairs })),
+            initializer: Some(Expression::new(ExpressionKind::HashMapLiteral {
+                pairs: map_pairs,
+            })),
         };
 
         let s_decl = Statement::VariableDecl {
             name: "s".to_string(),
             typ: None,
-            initializer: Some(Expression::new(ExpressionKind::Literal(Literal::Integer(0)))),
+            initializer: Some(Expression::new(ExpressionKind::Literal(Literal::Integer(
+                0,
+            )))),
         };
 
         // m.iter() call
@@ -86,10 +90,14 @@ mod tests {
             name: "main".to_string(),
             params: vec![],
             return_type: None,
-            body: Block { statements: vec![m_decl, s_decl, for_stmt] },
+            body: Block {
+                statements: vec![m_decl, s_decl, for_stmt],
+            },
         };
 
-        let program = Program { declarations: vec![Declaration::Function(func)] };
+        let program = Program {
+            declarations: vec![Declaration::Function(func)],
+        };
 
         let mut interp = Interpreter::new();
         let res = interp.interpret_program(&program);
@@ -116,7 +124,9 @@ mod tests {
         let m_decl = Statement::VariableDecl {
             name: "m".to_string(),
             typ: None,
-            initializer: Some(Expression::new(ExpressionKind::HashMapLiteral { pairs: map_pairs })),
+            initializer: Some(Expression::new(ExpressionKind::HashMapLiteral {
+                pairs: map_pairs,
+            })),
         };
 
         // var it = m.iter()
@@ -220,7 +230,9 @@ mod tests {
         let m_decl = Statement::VariableDecl {
             name: "m".to_string(),
             typ: None,
-            initializer: Some(Expression::new(ExpressionKind::HashMapLiteral { pairs: map_pairs })),
+            initializer: Some(Expression::new(ExpressionKind::HashMapLiteral {
+                pairs: map_pairs,
+            })),
         };
 
         // var it = m.iter()
@@ -316,11 +328,13 @@ impl std::fmt::Display for Value {
             Value::Array(elements) => {
                 write!(f, "Array(")?;
                 for (i, element) in elements.iter().enumerate() {
-                    if i > 0 { write!(f, ", ")?; }
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
                     write!(f, "{}", element)?;
                 }
                 write!(f, ")")
-            },
+            }
             Value::Iterator(_) => write!(f, "<iterator>"),
             Value::HashMap(map) => {
                 write!(f, "HashMap(")?;
@@ -332,7 +346,7 @@ impl std::fmt::Display for Value {
                     }
                 }
                 write!(f, ")")
-            },
+            }
         }
     }
 }
@@ -352,7 +366,11 @@ impl std::fmt::Display for RuntimeError {
             RuntimeError::UndefinedVariable(name) => write!(f, "Undefined variable '{}'", name),
             RuntimeError::TypeMismatch(msg) => write!(f, "Type mismatch: {}", msg),
             RuntimeError::NotAFunction(name) => write!(f, "Not a function: {}", name),
-            RuntimeError::ArgumentCount { expected, got } => write!(f, "Incorrect argument count: expected {}, got {}", expected, got),
+            RuntimeError::ArgumentCount { expected, got } => write!(
+                f,
+                "Incorrect argument count: expected {}, got {}",
+                expected, got
+            ),
             RuntimeError::Return(_) => write!(f, "Return statement outside function"),
         }
     }
@@ -410,7 +428,6 @@ impl Default for Environment {
     fn default() -> Self {
         Self::new()
     }
-
 }
 
 pub struct Interpreter {
@@ -438,12 +455,17 @@ impl Interpreter {
             "abs".to_string(),
             Value::NativeFunction(|args| {
                 if args.len() != 1 {
-                    return Err(RuntimeError::ArgumentCount { expected: 1, got: args.len() });
+                    return Err(RuntimeError::ArgumentCount {
+                        expected: 1,
+                        got: args.len(),
+                    });
                 }
                 match &args[0] {
                     Value::Float(f) => Ok(Value::Float(f.abs())),
                     Value::Integer(i) => Ok(Value::Integer(i.abs())),
-                    _ => Err(RuntimeError::TypeMismatch("abs() expects a number".to_string())),
+                    _ => Err(RuntimeError::TypeMismatch(
+                        "abs() expects a number".to_string(),
+                    )),
                 }
             }),
         );
@@ -452,14 +474,19 @@ impl Interpreter {
             "min".to_string(),
             Value::NativeFunction(|args| {
                 if args.len() != 2 {
-                    return Err(RuntimeError::ArgumentCount { expected: 2, got: args.len() });
+                    return Err(RuntimeError::ArgumentCount {
+                        expected: 2,
+                        got: args.len(),
+                    });
                 }
                 match (&args[0], &args[1]) {
                     (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a.min(*b))),
                     (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer((*a).min(*b))),
                     (Value::Float(a), Value::Integer(b)) => Ok(Value::Float(a.min(*b as f64))),
                     (Value::Integer(a), Value::Float(b)) => Ok(Value::Float((*a as f64).min(*b))),
-                    _ => Err(RuntimeError::TypeMismatch("min() expects two numbers".to_string())),
+                    _ => Err(RuntimeError::TypeMismatch(
+                        "min() expects two numbers".to_string(),
+                    )),
                 }
             }),
         );
@@ -468,14 +495,19 @@ impl Interpreter {
             "max".to_string(),
             Value::NativeFunction(|args| {
                 if args.len() != 2 {
-                    return Err(RuntimeError::ArgumentCount { expected: 2, got: args.len() });
+                    return Err(RuntimeError::ArgumentCount {
+                        expected: 2,
+                        got: args.len(),
+                    });
                 }
                 match (&args[0], &args[1]) {
                     (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a.max(*b))),
                     (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer((*a).max(*b))),
                     (Value::Float(a), Value::Integer(b)) => Ok(Value::Float(a.max(*b as f64))),
                     (Value::Integer(a), Value::Float(b)) => Ok(Value::Float((*a as f64).max(*b))),
-                    _ => Err(RuntimeError::TypeMismatch("max() expects two numbers".to_string())),
+                    _ => Err(RuntimeError::TypeMismatch(
+                        "max() expects two numbers".to_string(),
+                    )),
                 }
             }),
         );
@@ -484,24 +516,33 @@ impl Interpreter {
             "sqrt".to_string(),
             Value::NativeFunction(|args| {
                 if args.len() != 1 {
-                    return Err(RuntimeError::ArgumentCount { expected: 1, got: args.len() });
+                    return Err(RuntimeError::ArgumentCount {
+                        expected: 1,
+                        got: args.len(),
+                    });
                 }
                 match &args[0] {
                     Value::Float(f) => {
                         if *f < 0.0 {
-                            Err(RuntimeError::TypeMismatch("sqrt() expects a non-negative number".to_string()))
+                            Err(RuntimeError::TypeMismatch(
+                                "sqrt() expects a non-negative number".to_string(),
+                            ))
                         } else {
                             Ok(Value::Float(f.sqrt()))
                         }
-                    },
+                    }
                     Value::Integer(i) => {
                         if *i < 0 {
-                            Err(RuntimeError::TypeMismatch("sqrt() expects a non-negative number".to_string()))
+                            Err(RuntimeError::TypeMismatch(
+                                "sqrt() expects a non-negative number".to_string(),
+                            ))
                         } else {
                             Ok(Value::Float((*i as f64).sqrt()))
                         }
-                    },
-                    _ => Err(RuntimeError::TypeMismatch("sqrt() expects a number".to_string())),
+                    }
+                    _ => Err(RuntimeError::TypeMismatch(
+                        "sqrt() expects a number".to_string(),
+                    )),
                 }
             }),
         );
@@ -510,14 +551,21 @@ impl Interpreter {
             "pow".to_string(),
             Value::NativeFunction(|args| {
                 if args.len() != 2 {
-                    return Err(RuntimeError::ArgumentCount { expected: 2, got: args.len() });
+                    return Err(RuntimeError::ArgumentCount {
+                        expected: 2,
+                        got: args.len(),
+                    });
                 }
                 match (&args[0], &args[1]) {
                     (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a.powf(*b))),
                     (Value::Float(a), Value::Integer(b)) => Ok(Value::Float(a.powf(*b as f64))),
                     (Value::Integer(a), Value::Float(b)) => Ok(Value::Float((*a as f64).powf(*b))),
-                    (Value::Integer(a), Value::Integer(b)) => Ok(Value::Float((*a as f64).powf(*b as f64))),
-                    _ => Err(RuntimeError::TypeMismatch("pow() expects two numbers".to_string())),
+                    (Value::Integer(a), Value::Integer(b)) => {
+                        Ok(Value::Float((*a as f64).powf(*b as f64)))
+                    }
+                    _ => Err(RuntimeError::TypeMismatch(
+                        "pow() expects two numbers".to_string(),
+                    )),
                 }
             }),
         );
@@ -526,12 +574,17 @@ impl Interpreter {
             "sin".to_string(),
             Value::NativeFunction(|args| {
                 if args.len() != 1 {
-                    return Err(RuntimeError::ArgumentCount { expected: 1, got: args.len() });
+                    return Err(RuntimeError::ArgumentCount {
+                        expected: 1,
+                        got: args.len(),
+                    });
                 }
                 match &args[0] {
                     Value::Float(f) => Ok(Value::Float(f.sin())),
                     Value::Integer(i) => Ok(Value::Float((*i as f64).sin())),
-                    _ => Err(RuntimeError::TypeMismatch("sin() expects a number".to_string())),
+                    _ => Err(RuntimeError::TypeMismatch(
+                        "sin() expects a number".to_string(),
+                    )),
                 }
             }),
         );
@@ -540,12 +593,17 @@ impl Interpreter {
             "cos".to_string(),
             Value::NativeFunction(|args| {
                 if args.len() != 1 {
-                    return Err(RuntimeError::ArgumentCount { expected: 1, got: args.len() });
+                    return Err(RuntimeError::ArgumentCount {
+                        expected: 1,
+                        got: args.len(),
+                    });
                 }
                 match &args[0] {
                     Value::Float(f) => Ok(Value::Float(f.cos())),
                     Value::Integer(i) => Ok(Value::Float((*i as f64).cos())),
-                    _ => Err(RuntimeError::TypeMismatch("cos() expects a number".to_string())),
+                    _ => Err(RuntimeError::TypeMismatch(
+                        "cos() expects a number".to_string(),
+                    )),
                 }
             }),
         );
@@ -554,21 +612,23 @@ impl Interpreter {
             "tan".to_string(),
             Value::NativeFunction(|args| {
                 if args.len() != 1 {
-                    return Err(RuntimeError::ArgumentCount { expected: 1, got: args.len() });
+                    return Err(RuntimeError::ArgumentCount {
+                        expected: 1,
+                        got: args.len(),
+                    });
                 }
                 match &args[0] {
                     Value::Float(f) => Ok(Value::Float(f.tan())),
                     Value::Integer(i) => Ok(Value::Float((*i as f64).tan())),
-                    _ => Err(RuntimeError::TypeMismatch("tan() expects a number".to_string())),
+                    _ => Err(RuntimeError::TypeMismatch(
+                        "tan() expects a number".to_string(),
+                    )),
                 }
             }),
         );
-        
-
 
         Self { globals }
     }
-
 }
 
 impl Default for Interpreter {
@@ -702,13 +762,18 @@ impl Interpreter {
                 }
                 Ok(())
             }
-            Statement::ForEach { variable, iterable, body } => {
+            Statement::ForEach {
+                variable,
+                iterable,
+                body,
+            } => {
                 let iterable_val = self.evaluate_expression(iterable, env.clone())?;
 
                 match iterable_val {
                     Value::Array(elements) => {
                         for element in elements {
-                            let new_env = Rc::new(RefCell::new(Environment::with_enclosing(env.clone())));
+                            let new_env =
+                                Rc::new(RefCell::new(Environment::with_enclosing(env.clone())));
                             match variable {
                                 dotlin_ast::ForEachTarget::Ident(name) => {
                                     new_env.borrow_mut().define(name.clone(), element);
@@ -718,87 +783,97 @@ impl Interpreter {
                                     if let Value::Array(inner) = element {
                                         if inner.len() != names.len() {
                                             return Err(RuntimeError::TypeMismatch(
-                                                "Destructuring assignment length mismatch".to_string(),
+                                                "Destructuring assignment length mismatch"
+                                                    .to_string(),
                                             ));
                                         }
                                         for (i, n) in names.iter().enumerate() {
-                                            new_env.borrow_mut().define(n.clone(), inner[i].clone());
+                                            new_env
+                                                .borrow_mut()
+                                                .define(n.clone(), inner[i].clone());
                                         }
                                     } else {
                                         return Err(RuntimeError::TypeMismatch(
-                                            "Destructuring target requires array elements".to_string(),
+                                            "Destructuring target requires array elements"
+                                                .to_string(),
                                         ));
                                     }
                                 }
                             }
                             self.execute_statement(body, new_env)?;
                         }
-                    },
+                    }
                     Value::HashMap(map) => {
                         // If destructuring into a tuple of (key, value), iterate entries
                         if let dotlin_ast::ForEachTarget::Tuple(names) = variable {
                             if names.len() != 2 {
                                 return Err(RuntimeError::TypeMismatch(
-                                    "HashMap entries destructuring requires two variables".to_string(),
+                                    "HashMap entries destructuring requires two variables"
+                                        .to_string(),
                                 ));
                             }
                             for (key, value) in map.iter() {
-                                let new_env = Rc::new(RefCell::new(Environment::with_enclosing(env.clone())));
-                                new_env.borrow_mut().define(names[0].clone(), Value::String(key.clone()));
+                                let new_env =
+                                    Rc::new(RefCell::new(Environment::with_enclosing(env.clone())));
+                                new_env
+                                    .borrow_mut()
+                                    .define(names[0].clone(), Value::String(key.clone()));
                                 new_env.borrow_mut().define(names[1].clone(), value.clone());
                                 self.execute_statement(body, new_env)?;
                             }
                         } else if let dotlin_ast::ForEachTarget::Ident(name) = variable {
                             // For HashMap iteration, iterate over the keys
                             for key in map.keys() {
-                                let new_env = Rc::new(RefCell::new(Environment::with_enclosing(env.clone())));
-                                new_env.borrow_mut().define(name.clone(), Value::String(key.clone()));
+                                let new_env =
+                                    Rc::new(RefCell::new(Environment::with_enclosing(env.clone())));
+                                new_env
+                                    .borrow_mut()
+                                    .define(name.clone(), Value::String(key.clone()));
                                 self.execute_statement(body, new_env)?;
                             }
                         }
-                    },
-                    Value::Iterator(it_rc) => {
-                        loop {
-                            let next_opt = {
-                                let mut it = it_rc.borrow_mut();
-                                if it.pos >= it.items.len() {
-                                    None
-                                } else {
-                                    let v = it.items[it.pos].clone();
-                                    it.pos += 1;
-                                    Some(v)
-                                }
-                            };
-
-                            if next_opt.is_none() {
-                                break;
+                    }
+                    Value::Iterator(it_rc) => loop {
+                        let next_opt = {
+                            let mut it = it_rc.borrow_mut();
+                            if it.pos >= it.items.len() {
+                                None
+                            } else {
+                                let v = it.items[it.pos].clone();
+                                it.pos += 1;
+                                Some(v)
                             }
+                        };
 
-                            let element = next_opt.unwrap();
-                            let new_env = Rc::new(RefCell::new(Environment::with_enclosing(env.clone())));
-                            match variable {
-                                dotlin_ast::ForEachTarget::Ident(name) => {
-                                    new_env.borrow_mut().define(name.clone(), element);
-                                }
-                                dotlin_ast::ForEachTarget::Tuple(names) => {
-                                    if let Value::Array(inner) = element {
-                                        if inner.len() != names.len() {
-                                            return Err(RuntimeError::TypeMismatch(
-                                                "Destructuring assignment length mismatch".to_string(),
-                                            ));
-                                        }
-                                        for (i, n) in names.iter().enumerate() {
-                                            new_env.borrow_mut().define(n.clone(), inner[i].clone());
-                                        }
-                                    } else {
+                        if next_opt.is_none() {
+                            break;
+                        }
+
+                        let element = next_opt.unwrap();
+                        let new_env =
+                            Rc::new(RefCell::new(Environment::with_enclosing(env.clone())));
+                        match variable {
+                            dotlin_ast::ForEachTarget::Ident(name) => {
+                                new_env.borrow_mut().define(name.clone(), element);
+                            }
+                            dotlin_ast::ForEachTarget::Tuple(names) => {
+                                if let Value::Array(inner) = element {
+                                    if inner.len() != names.len() {
                                         return Err(RuntimeError::TypeMismatch(
-                                            "Destructuring target requires array elements".to_string(),
+                                            "Destructuring assignment length mismatch".to_string(),
                                         ));
                                     }
+                                    for (i, n) in names.iter().enumerate() {
+                                        new_env.borrow_mut().define(n.clone(), inner[i].clone());
+                                    }
+                                } else {
+                                    return Err(RuntimeError::TypeMismatch(
+                                        "Destructuring target requires array elements".to_string(),
+                                    ));
                                 }
                             }
-                            self.execute_statement(body, new_env)?;
                         }
+                        self.execute_statement(body, new_env)?;
                     },
                     _ => {
                         return Err(RuntimeError::TypeMismatch(
@@ -839,24 +914,22 @@ impl Interpreter {
                         .iter()
                         .map(|arg| self.evaluate_expression(arg, env.clone()))
                         .collect::<Result<Vec<_>, _>>()?;
-                    
+
                     // Handle type conversion methods and HashMap iteration methods
                     match (obj_val, member.as_str()) {
-                        (Value::String(s), "toInt") => {
-                            match s.parse::<i64>() {
-                                Ok(num) => Ok(Value::Integer(num)),
-                                Err(_) => Err(RuntimeError::TypeMismatch(
-                                    format!("Cannot convert string '{}' to integer", s)
-                                )),
-                            }
+                        (Value::String(s), "toInt") => match s.parse::<i64>() {
+                            Ok(num) => Ok(Value::Integer(num)),
+                            Err(_) => Err(RuntimeError::TypeMismatch(format!(
+                                "Cannot convert string '{}' to integer",
+                                s
+                            ))),
                         },
-                        (Value::String(s), "toFloat") => {
-                            match s.parse::<f64>() {
-                                Ok(num) => Ok(Value::Float(num)),
-                                Err(_) => Err(RuntimeError::TypeMismatch(
-                                    format!("Cannot convert string '{}' to float", s)
-                                )),
-                            }
+                        (Value::String(s), "toFloat") => match s.parse::<f64>() {
+                            Ok(num) => Ok(Value::Float(num)),
+                            Err(_) => Err(RuntimeError::TypeMismatch(format!(
+                                "Cannot convert string '{}' to float",
+                                s
+                            ))),
                         },
                         (Value::Integer(n), "toFloat") => Ok(Value::Float(n as f64)),
                         (Value::Float(f), "toInt") => Ok(Value::Integer(f as i64)),
@@ -867,49 +940,57 @@ impl Interpreter {
                         // Array methods
                         (Value::Array(mut elements), "push") => {
                             if _args.len() != 1 {
-                                return Err(RuntimeError::TypeMismatch("push() expects 1 argument".to_string()));
+                                return Err(RuntimeError::TypeMismatch(
+                                    "push() expects 1 argument".to_string(),
+                                ));
                             }
                             elements.push(_args[0].clone());
                             // Return void (or the new length if we want to follow JS conventions)
                             Ok(Value::Array(elements))
-                        },
+                        }
                         (Value::Array(mut elements), "pop") => {
                             if elements.is_empty() {
-                                return Err(RuntimeError::TypeMismatch("pop() called on empty array".to_string()));
+                                return Err(RuntimeError::TypeMismatch(
+                                    "pop() called on empty array".to_string(),
+                                ));
                             }
                             let last_element = elements.pop().unwrap();
                             Ok(last_element)
-                        },
+                        }
                         // HashMap iteration methods
                         (Value::HashMap(map), "keys") => {
-                            let keys: Vec<Value> = map.keys().map(|k| Value::String(k.clone())).collect();
+                            let keys: Vec<Value> =
+                                map.keys().map(|k| Value::String(k.clone())).collect();
                             Ok(Value::Array(keys))
-                        },
+                        }
                         (Value::HashMap(map), "iter") => {
                             let mut entries = Vec::new();
                             for (key, value) in map.iter() {
-                                let entry = Value::Array(vec![Value::String(key.clone()), value.clone()]);
+                                let entry =
+                                    Value::Array(vec![Value::String(key.clone()), value.clone()]);
                                 entries.push(entry);
                             }
-                            let it = IteratorState { items: entries, pos: 0 };
+                            let it = IteratorState {
+                                items: entries,
+                                pos: 0,
+                            };
                             Ok(Value::Iterator(Rc::new(RefCell::new(it))))
-                        },
+                        }
                         (Value::HashMap(map), "values") => {
                             let values: Vec<Value> = map.values().cloned().collect();
                             Ok(Value::Array(values))
-                        },
-                        (Value::HashMap(map), "size") => {
-                            Ok(Value::Integer(map.len() as i64))
-                        },
+                        }
+                        (Value::HashMap(map), "size") => Ok(Value::Integer(map.len() as i64)),
                         (Value::HashMap(map), "entries") => {
                             let mut entries = Vec::new();
                             for (key, value) in map.iter() {
                                 // Create an array with [key, value] for each entry
-                                let entry = Value::Array(vec![Value::String(key.clone()), value.clone()]);
+                                let entry =
+                                    Value::Array(vec![Value::String(key.clone()), value.clone()]);
                                 entries.push(entry);
                             }
                             Ok(Value::Array(entries))
-                        },
+                        }
                         // Iterator next() on iterator objects
                         (Value::Iterator(it_rc), "next") => {
                             let mut it = it_rc.borrow_mut();
@@ -920,11 +1001,11 @@ impl Interpreter {
                                 it.pos += 1;
                                 Ok(v)
                             }
-                        },
+                        }
                         (obj_val, method_name) => Err(RuntimeError::TypeMismatch(format!(
                             "Method '{}' not found on type {:?}",
                             method_name, obj_val
-                        )))
+                        ))),
                     }
                 } else {
                     // Regular function call
@@ -952,7 +1033,9 @@ impl Interpreter {
                             // If left is true, evaluate and return the right operand
                             let r_val = self.evaluate_expression(right, env.clone())?;
                             match (l_val, r_val) {
-                                (Value::Boolean(l), Value::Boolean(r)) => Ok(Value::Boolean(l && r)),
+                                (Value::Boolean(l), Value::Boolean(r)) => {
+                                    Ok(Value::Boolean(l && r))
+                                }
                                 _ => Err(RuntimeError::TypeMismatch(
                                     "Both operands of && must be boolean".to_string(),
                                 )),
@@ -968,7 +1051,9 @@ impl Interpreter {
                             // If left is false, evaluate and return the right operand
                             let r_val = self.evaluate_expression(right, env.clone())?;
                             match (l_val, r_val) {
-                                (Value::Boolean(l), Value::Boolean(r)) => Ok(Value::Boolean(l || r)),
+                                (Value::Boolean(l), Value::Boolean(r)) => {
+                                    Ok(Value::Boolean(l || r))
+                                }
                                 _ => Err(RuntimeError::TypeMismatch(
                                     "Both operands of || must be boolean".to_string(),
                                 )),
@@ -1004,21 +1089,19 @@ impl Interpreter {
                 match (obj_val, member.as_str()) {
                     (Value::String(s), "length") => Ok(Value::Integer(s.len() as i64)),
                     // Type conversion methods
-                    (Value::String(s), "toInt") => {
-                        match s.parse::<i64>() {
-                            Ok(num) => Ok(Value::Integer(num)),
-                            Err(_) => Err(RuntimeError::TypeMismatch(
-                                format!("Cannot convert string '{}' to integer", s)
-                            )),
-                        }
+                    (Value::String(s), "toInt") => match s.parse::<i64>() {
+                        Ok(num) => Ok(Value::Integer(num)),
+                        Err(_) => Err(RuntimeError::TypeMismatch(format!(
+                            "Cannot convert string '{}' to integer",
+                            s
+                        ))),
                     },
-                    (Value::String(s), "toFloat") => {
-                        match s.parse::<f64>() {
-                            Ok(num) => Ok(Value::Float(num)),
-                            Err(_) => Err(RuntimeError::TypeMismatch(
-                                format!("Cannot convert string '{}' to float", s)
-                            )),
-                        }
+                    (Value::String(s), "toFloat") => match s.parse::<f64>() {
+                        Ok(num) => Ok(Value::Float(num)),
+                        Err(_) => Err(RuntimeError::TypeMismatch(format!(
+                            "Cannot convert string '{}' to float",
+                            s
+                        ))),
                     },
                     (Value::Integer(n), "toFloat") => Ok(Value::Float(n as f64)),
                     (Value::Float(f), "toInt") => Ok(Value::Integer(f as i64)),
@@ -1032,44 +1115,48 @@ impl Interpreter {
                         Err(RuntimeError::TypeMismatch(
                             "Cannot call push() without arguments via member access".to_string(),
                         ))
-                    },
+                    }
                     (Value::Array(_elements), "pop") => {
                         // For member access, this would be an error since pop() should be callable
                         Err(RuntimeError::TypeMismatch(
                             "Cannot call pop() via member access".to_string(),
                         ))
-                    },
+                    }
                     // HashMap iteration methods
                     (Value::HashMap(map), "keys") => {
-                        let keys: Vec<Value> = map.keys().map(|k| Value::String(k.clone())).collect();
+                        let keys: Vec<Value> =
+                            map.keys().map(|k| Value::String(k.clone())).collect();
                         Ok(Value::Array(keys))
-                    },
+                    }
                     (Value::HashMap(map), "iter") => {
                         // Create iterator over entries
                         let mut entries = Vec::new();
                         for (key, value) in map.iter() {
-                            let entry = Value::Array(vec![Value::String(key.clone()), value.clone()]);
+                            let entry =
+                                Value::Array(vec![Value::String(key.clone()), value.clone()]);
                             entries.push(entry);
                         }
-                        let it = IteratorState { items: entries, pos: 0 };
+                        let it = IteratorState {
+                            items: entries,
+                            pos: 0,
+                        };
                         Ok(Value::Iterator(Rc::new(RefCell::new(it))))
-                    },
+                    }
                     (Value::HashMap(map), "values") => {
                         let values: Vec<Value> = map.values().cloned().collect();
                         Ok(Value::Array(values))
-                    },
-                    (Value::HashMap(map), "size") => {
-                        Ok(Value::Integer(map.len() as i64))
-                    },
+                    }
+                    (Value::HashMap(map), "size") => Ok(Value::Integer(map.len() as i64)),
                     (Value::HashMap(map), "entries") => {
                         let mut entries = Vec::new();
                         for (key, value) in map.iter() {
                             // Create an array with [key, value] for each entry
-                            let entry = Value::Array(vec![Value::String(key.clone()), value.clone()]);
+                            let entry =
+                                Value::Array(vec![Value::String(key.clone()), value.clone()]);
                             entries.push(entry);
                         }
                         Ok(Value::Array(entries))
-                    },
+                    }
                     (val, _) => Err(RuntimeError::TypeMismatch(format!(
                         "Cannot access member '{}' on {:?}",
                         member, val
@@ -1086,7 +1173,7 @@ impl Interpreter {
             ExpressionKind::Index { array, index } => {
                 let arr_val = self.evaluate_expression(array, env.clone())?;
                 let idx_val = self.evaluate_expression(index, env)?;
-                
+
                 match (arr_val, idx_val) {
                     (Value::Array(elements), Value::Integer(index)) => {
                         let idx = index as usize;
@@ -1110,34 +1197,29 @@ impl Interpreter {
                             ))
                         }
                     }
-                    (Value::HashMap(map), Value::String(key)) => {
-                        match map.get(&key) {
-                            Some(value) => Ok(value.clone()),
-                            None => Err(RuntimeError::TypeMismatch(
-                                format!("Key '{}' not found in HashMap", key),
-                            )),
-                        }
-                    }
-                    (Value::HashMap(map), Value::Integer(key)) => {
-                        match map.get(&key.to_string()) {
-                            Some(value) => Ok(value.clone()),
-                            None => Err(RuntimeError::TypeMismatch(
-                                format!("Key '{}' not found in HashMap", key),
-                            )),
-                        }
-                    }
-                    (_, Value::Integer(_)) => {
-                        Err(RuntimeError::TypeMismatch(
-                            "Indexing target is not an array or string".to_string(),
-                        ))
-                    }
-                    (_, Value::String(_)) => {
-                        Err(RuntimeError::TypeMismatch(
-                            "Indexing target is not a HashMap".to_string(),
-                        ))
-                    }
+                    (Value::HashMap(map), Value::String(key)) => match map.get(&key) {
+                        Some(value) => Ok(value.clone()),
+                        None => Err(RuntimeError::TypeMismatch(format!(
+                            "Key '{}' not found in HashMap",
+                            key
+                        ))),
+                    },
+                    (Value::HashMap(map), Value::Integer(key)) => match map.get(&key.to_string()) {
+                        Some(value) => Ok(value.clone()),
+                        None => Err(RuntimeError::TypeMismatch(format!(
+                            "Key '{}' not found in HashMap",
+                            key
+                        ))),
+                    },
+                    (_, Value::Integer(_)) => Err(RuntimeError::TypeMismatch(
+                        "Indexing target is not an array or string".to_string(),
+                    )),
+                    (_, Value::String(_)) => Err(RuntimeError::TypeMismatch(
+                        "Indexing target is not a HashMap".to_string(),
+                    )),
                     _ => Err(RuntimeError::TypeMismatch(
-                        "Index must be an integer for arrays/strings or string for HashMaps".to_string(),
+                        "Index must be an integer for arrays/strings or string for HashMaps"
+                            .to_string(),
                     )),
                 }
             }
@@ -1146,14 +1228,18 @@ impl Interpreter {
                 for (key_expr, value_expr) in pairs {
                     let key = self.evaluate_expression(key_expr, env.clone())?;
                     let value = self.evaluate_expression(value_expr, env.clone())?;
-                    
+
                     // Convert key to string if it's a string literal
                     let key_str = match key {
                         Value::String(s) => s,
                         Value::Integer(i) => i.to_string(),
-                        _ => return Err(RuntimeError::TypeMismatch("HashMap key must be string or integer".to_string())),
+                        _ => {
+                            return Err(RuntimeError::TypeMismatch(
+                                "HashMap key must be string or integer".to_string(),
+                            ))
+                        }
                     };
-                    
+
                     map.insert(key_str, value);
                 }
                 Ok(Value::HashMap(map))
@@ -1214,7 +1300,7 @@ impl Interpreter {
             (Value::Integer(l), BinaryOp::Sub, Value::Integer(r)) => Ok(Value::Integer(l - r)),
             (Value::Integer(l), BinaryOp::Mul, Value::Integer(r)) => Ok(Value::Integer(l * r)),
             (Value::Integer(l), BinaryOp::Div, Value::Integer(r)) => Ok(Value::Integer(l / r)),
-            
+
             // Comparisons
             (Value::Integer(l), BinaryOp::Equal, Value::Integer(r)) => Ok(Value::Boolean(l == r)),
             (Value::Integer(l), BinaryOp::NotEqual, Value::Integer(r)) => {
@@ -1228,25 +1314,33 @@ impl Interpreter {
             (Value::Integer(l), BinaryOp::GreaterEqual, Value::Integer(r)) => {
                 Ok(Value::Boolean(l >= r))
             }
-            
+
             // Float operations
             (Value::Float(l), BinaryOp::Add, Value::Float(r)) => Ok(Value::Float(l + r)),
             (Value::Float(l), BinaryOp::Sub, Value::Float(r)) => Ok(Value::Float(l - r)),
             (Value::Float(l), BinaryOp::Mul, Value::Float(r)) => Ok(Value::Float(l * r)),
             (Value::Float(l), BinaryOp::Div, Value::Float(r)) => Ok(Value::Float(l / r)),
-            
+
             // Compound assignment operators for integers
-            (Value::Integer(l), BinaryOp::PlusEqual, Value::Integer(r)) => Ok(Value::Integer(l + r)),
-            (Value::Integer(l), BinaryOp::MinusEqual, Value::Integer(r)) => Ok(Value::Integer(l - r)),
-            (Value::Integer(l), BinaryOp::StarEqual, Value::Integer(r)) => Ok(Value::Integer(l * r)),
-            (Value::Integer(l), BinaryOp::SlashEqual, Value::Integer(r)) => Ok(Value::Integer(l / r)),
-            
+            (Value::Integer(l), BinaryOp::PlusEqual, Value::Integer(r)) => {
+                Ok(Value::Integer(l + r))
+            }
+            (Value::Integer(l), BinaryOp::MinusEqual, Value::Integer(r)) => {
+                Ok(Value::Integer(l - r))
+            }
+            (Value::Integer(l), BinaryOp::StarEqual, Value::Integer(r)) => {
+                Ok(Value::Integer(l * r))
+            }
+            (Value::Integer(l), BinaryOp::SlashEqual, Value::Integer(r)) => {
+                Ok(Value::Integer(l / r))
+            }
+
             // Compound assignment operators for floats
             (Value::Float(l), BinaryOp::PlusEqual, Value::Float(r)) => Ok(Value::Float(l + r)),
             (Value::Float(l), BinaryOp::MinusEqual, Value::Float(r)) => Ok(Value::Float(l - r)),
             (Value::Float(l), BinaryOp::StarEqual, Value::Float(r)) => Ok(Value::Float(l * r)),
             (Value::Float(l), BinaryOp::SlashEqual, Value::Float(r)) => Ok(Value::Float(l / r)),
-            
+
             // Boolean operations
             (Value::Boolean(l), BinaryOp::Equal, Value::Boolean(r)) => Ok(Value::Boolean(l == r)),
             (Value::Boolean(l), BinaryOp::NotEqual, Value::Boolean(r)) => {
@@ -1275,17 +1369,33 @@ impl Interpreter {
             (Value::Boolean(l), BinaryOp::Add, Value::String(r)) => {
                 Ok(Value::String(format!("{}{}", l, r)))
             }
-            
+
             // Mixed operations for compound assignments
-            (Value::Integer(l), BinaryOp::PlusEqual, Value::Float(r)) => Ok(Value::Float(l as f64 + r)),
-            (Value::Float(l), BinaryOp::PlusEqual, Value::Integer(r)) => Ok(Value::Float(l + r as f64)),
-            (Value::Integer(l), BinaryOp::MinusEqual, Value::Float(r)) => Ok(Value::Float(l as f64 - r)),
-            (Value::Float(l), BinaryOp::MinusEqual, Value::Integer(r)) => Ok(Value::Float(l - r as f64)),
-            (Value::Integer(l), BinaryOp::StarEqual, Value::Float(r)) => Ok(Value::Float(l as f64 * r)),
-            (Value::Float(l), BinaryOp::StarEqual, Value::Integer(r)) => Ok(Value::Float(l * r as f64)),
-            (Value::Integer(l), BinaryOp::SlashEqual, Value::Float(r)) => Ok(Value::Float(l as f64 / r)),
-            (Value::Float(l), BinaryOp::SlashEqual, Value::Integer(r)) => Ok(Value::Float(l / r as f64)),
-            
+            (Value::Integer(l), BinaryOp::PlusEqual, Value::Float(r)) => {
+                Ok(Value::Float(l as f64 + r))
+            }
+            (Value::Float(l), BinaryOp::PlusEqual, Value::Integer(r)) => {
+                Ok(Value::Float(l + r as f64))
+            }
+            (Value::Integer(l), BinaryOp::MinusEqual, Value::Float(r)) => {
+                Ok(Value::Float(l as f64 - r))
+            }
+            (Value::Float(l), BinaryOp::MinusEqual, Value::Integer(r)) => {
+                Ok(Value::Float(l - r as f64))
+            }
+            (Value::Integer(l), BinaryOp::StarEqual, Value::Float(r)) => {
+                Ok(Value::Float(l as f64 * r))
+            }
+            (Value::Float(l), BinaryOp::StarEqual, Value::Integer(r)) => {
+                Ok(Value::Float(l * r as f64))
+            }
+            (Value::Integer(l), BinaryOp::SlashEqual, Value::Float(r)) => {
+                Ok(Value::Float(l as f64 / r))
+            }
+            (Value::Float(l), BinaryOp::SlashEqual, Value::Integer(r)) => {
+                Ok(Value::Float(l / r as f64))
+            }
+
             // String concatenation for PlusEqual
             (Value::String(l), BinaryOp::PlusEqual, Value::String(r)) => {
                 Ok(Value::String(format!("{}{}", l, r)))
@@ -1311,7 +1421,6 @@ impl Interpreter {
             _ => Err(RuntimeError::TypeMismatch(
                 "Binary operator operand mismatch".to_string(),
             )),
-            
         }
     }
 }

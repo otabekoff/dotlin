@@ -26,7 +26,7 @@ pub struct Param {
 pub enum Type {
     Named(String),
     Array(Box<Type>),
-    Map(Box<Type>, Box<Type>), // Key-value map type
+    Map(Box<Type>, Box<Type>),  // Key-value map type
     Generic(String, Vec<Type>), // Generic type with type parameters
 }
 

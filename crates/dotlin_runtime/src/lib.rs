@@ -80,7 +80,11 @@ pub struct DotlinArray {
 
 #[no_mangle]
 pub extern "C" fn dotlin_array_new(_element_size: u64, initial_capacity: u64) -> *mut DotlinArray {
-    let capacity = if initial_capacity == 0 { 1 } else { initial_capacity }; // Ensure at least 1 element capacity
+    let capacity = if initial_capacity == 0 {
+        1
+    } else {
+        initial_capacity
+    }; // Ensure at least 1 element capacity
     let vec: Vec<u64> = vec![0; capacity as usize];
     let boxed = vec.into_boxed_slice();
     let array = DotlinArray {
@@ -88,7 +92,7 @@ pub extern "C" fn dotlin_array_new(_element_size: u64, initial_capacity: u64) ->
         size: 0,
         capacity,
     };
-    
+
     Box::into_raw(Box::new(array))
 }
 
@@ -199,13 +203,13 @@ pub extern "C" fn dotlin_array_get(array_ptr: *mut DotlinArray, index: u64) -> u
     if array_ptr.is_null() {
         return 0; // Error value
     }
-    
+
     unsafe {
         let array = &*array_ptr;
         if index >= array.size {
             return 0; // Error value
         }
-        
+
         let data_ptr = array.data;
         std::ptr::read(data_ptr.add(index as usize))
     }
@@ -216,10 +220,10 @@ pub extern "C" fn dotlin_array_set(array_ptr: *mut DotlinArray, index: u64, valu
     if array_ptr.is_null() {
         return;
     }
-    
+
     unsafe {
         let array = &mut *array_ptr;
-        
+
         // If we need to grow the array to accommodate this index
         if index >= array.capacity {
             // Ensure capacity is sufficient
@@ -228,10 +232,10 @@ pub extern "C" fn dotlin_array_set(array_ptr: *mut DotlinArray, index: u64, valu
             array.data = new_data;
             array.capacity = new_capacity;
         }
-        
+
         let data_ptr = array.data;
         std::ptr::write(data_ptr.add(index as usize), value);
-        
+
         if index >= array.size {
             array.size = index + 1;
         }
@@ -243,7 +247,7 @@ pub extern "C" fn dotlin_array_length(array_ptr: *mut DotlinArray) -> u64 {
     if array_ptr.is_null() {
         return 0;
     }
-    
+
     unsafe {
         let array = &*array_ptr;
         array.size
@@ -255,18 +259,22 @@ pub extern "C" fn dotlin_array_push(array_ptr: *mut DotlinArray, value: u64) {
     if array_ptr.is_null() {
         return;
     }
-    
+
     unsafe {
         let array = &mut *array_ptr;
-        
+
         // Check if we need to grow the array
         if array.size >= array.capacity {
-            let new_capacity = if array.capacity == 0 { 1 } else { array.capacity * 2 };
+            let new_capacity = if array.capacity == 0 {
+                1
+            } else {
+                array.capacity * 2
+            };
             let new_data = grow_array(array.data, array.capacity as usize, new_capacity as usize);
             array.data = new_data;
             array.capacity = new_capacity;
         }
-        
+
         let data_ptr = array.data;
         std::ptr::write(data_ptr.add(array.size as usize), value);
         array.size += 1;
@@ -278,13 +286,13 @@ pub extern "C" fn dotlin_array_pop(array_ptr: *mut DotlinArray) -> u64 {
     if array_ptr.is_null() {
         return 0; // Error value
     }
-    
+
     unsafe {
         let array = &mut *array_ptr;
         if array.size == 0 {
             return 0; // Error value - array is empty
         }
-        
+
         array.size -= 1;
         let data_ptr = array.data;
         std::ptr::read(data_ptr.add(array.size as usize)) // Return the popped value
@@ -303,13 +311,13 @@ pub struct DotlinHashMap {
 pub extern "C" fn dotlin_map_new() -> *mut DotlinHashMap {
     let map: StdHashMap<String, u64> = StdHashMap::new();
     let boxed_map = Box::new(map);
-    
+
     let hash_map = DotlinHashMap {
         data: Box::into_raw(boxed_map),
-        key_type_size: 8, // Assuming string key size
+        key_type_size: 8,   // Assuming string key size
         value_type_size: 8, // u64 value size
     };
-    
+
     Box::into_raw(Box::new(hash_map))
 }
 
@@ -318,15 +326,15 @@ pub extern "C" fn dotlin_map_get(map_ptr: *mut DotlinHashMap, key_ptr: *const u8
     if map_ptr.is_null() || key_ptr.is_null() {
         return 0; // Default value for missing key
     }
-    
+
     unsafe {
         let map = &*(*map_ptr).data;
-        
+
         let len = *(key_ptr as *const u64);
         let data = key_ptr.add(8);
         let s = std::slice::from_raw_parts(data, len as usize);
         let key_str = std::str::from_utf8(s).unwrap_or("invalid_key");
-        
+
         *map.get(key_str).unwrap_or(&0)
     }
 }
@@ -336,15 +344,15 @@ pub extern "C" fn dotlin_map_set(map_ptr: *mut DotlinHashMap, key_ptr: *const u8
     if map_ptr.is_null() || key_ptr.is_null() {
         return;
     }
-    
+
     unsafe {
         let map = &mut *(*map_ptr).data;
-        
+
         let len = *(key_ptr as *const u64);
         let data = key_ptr.add(8);
         let s = std::slice::from_raw_parts(data, len as usize);
         let key_str = std::str::from_utf8(s).unwrap_or("invalid_key").to_string();
-        
+
         map.insert(key_str, value);
     }
 }
@@ -354,15 +362,15 @@ pub extern "C" fn dotlin_map_remove(map_ptr: *mut DotlinHashMap, key_ptr: *const
     if map_ptr.is_null() || key_ptr.is_null() {
         return 0;
     }
-    
+
     unsafe {
         let map = &mut *(*map_ptr).data;
-        
+
         let len = *(key_ptr as *const u64);
         let data = key_ptr.add(8);
         let s = std::slice::from_raw_parts(data, len as usize);
         let key_str = std::str::from_utf8(s).unwrap_or("invalid_key").to_string();
-        
+
         map.remove(&key_str).unwrap_or(0)
     }
 }
@@ -372,16 +380,20 @@ pub extern "C" fn dotlin_map_contains(map_ptr: *mut DotlinHashMap, key_ptr: *con
     if map_ptr.is_null() || key_ptr.is_null() {
         return 0;
     }
-    
+
     unsafe {
         let map = &*(*map_ptr).data;
-        
+
         let len = *(key_ptr as *const u64);
         let data = key_ptr.add(8);
         let s = std::slice::from_raw_parts(data, len as usize);
         let key_str = std::str::from_utf8(s).unwrap_or("invalid_key");
-        
-        if map.contains_key(key_str) { 1 } else { 0 }
+
+        if map.contains_key(key_str) {
+            1
+        } else {
+            0
+        }
     }
 }
 
@@ -390,7 +402,7 @@ pub extern "C" fn dotlin_map_free(map_ptr: *mut DotlinHashMap) {
     if map_ptr.is_null() {
         return;
     }
-    
+
     unsafe {
         let _boxed_map = Box::from_raw((*map_ptr).data);
         let _boxed_hash_map = Box::from_raw(map_ptr);
@@ -403,13 +415,13 @@ pub extern "C" fn dotlin_string_to_int(str_ptr: *const u8) -> i64 {
     if str_ptr.is_null() {
         return 0; // Default value for error
     }
-    
+
     unsafe {
         let len = *(str_ptr as *const u64);
         let data = str_ptr.add(8);
         let s = std::slice::from_raw_parts(data, len as usize);
         let s = std::str::from_utf8(s).unwrap_or("0");
-        
+
         s.parse::<i64>().unwrap_or(0)
     }
 }
@@ -419,13 +431,13 @@ pub extern "C" fn dotlin_string_to_float(str_ptr: *const u8) -> f64 {
     if str_ptr.is_null() {
         return 0.0; // Default value for error
     }
-    
+
     unsafe {
         let len = *(str_ptr as *const u64);
         let data = str_ptr.add(8);
         let s = std::slice::from_raw_parts(data, len as usize);
         let s = std::str::from_utf8(s).unwrap_or("0.0");
-        
+
         s.parse::<f64>().unwrap_or(0.0)
     }
 }
@@ -443,15 +455,15 @@ pub extern "C" fn dotlin_float_to_int(val: f64) -> i64 {
 #[no_mangle]
 pub extern "C" fn dotlin_to_string(val: i64) -> *const u8 {
     let s = val.to_string();
-    
+
     unsafe {
         let total_len = s.len() as u64;
         let layout = std::alloc::Layout::from_size_align((total_len + 8) as usize, 8).unwrap();
         let new_ptr = std::alloc::alloc(layout);
-        
+
         *(new_ptr as *mut u64) = total_len;
         std::ptr::copy_nonoverlapping(s.as_ptr(), new_ptr.add(8), s.len());
-        
+
         new_ptr
     }
 }
@@ -459,31 +471,35 @@ pub extern "C" fn dotlin_to_string(val: i64) -> *const u8 {
 #[no_mangle]
 pub extern "C" fn dotlin_float_to_string(val: f64) -> *const u8 {
     let s = val.to_string();
-    
+
     unsafe {
         let total_len = s.len() as u64;
         let layout = std::alloc::Layout::from_size_align((total_len + 8) as usize, 8).unwrap();
         let new_ptr = std::alloc::alloc(layout);
-        
+
         *(new_ptr as *mut u64) = total_len;
         std::ptr::copy_nonoverlapping(s.as_ptr(), new_ptr.add(8), s.len());
-        
+
         new_ptr
     }
 }
 
 #[no_mangle]
 pub extern "C" fn dotlin_bool_to_string(val: i8) -> *const u8 {
-    let s = if val != 0 { "true".to_string() } else { "false".to_string() };
-    
+    let s = if val != 0 {
+        "true".to_string()
+    } else {
+        "false".to_string()
+    };
+
     unsafe {
         let total_len = s.len() as u64;
         let layout = std::alloc::Layout::from_size_align((total_len + 8) as usize, 8).unwrap();
         let new_ptr = std::alloc::alloc(layout);
-        
+
         *(new_ptr as *mut u64) = total_len;
         std::ptr::copy_nonoverlapping(s.as_ptr(), new_ptr.add(8), s.len());
-        
+
         new_ptr
     }
 }
@@ -492,15 +508,15 @@ pub extern "C" fn dotlin_bool_to_string(val: i8) -> *const u8 {
 pub extern "C" fn dotlin_char_to_string(val: i64) -> *const u8 {
     let c = val as u8 as char;
     let s = c.to_string();
-    
+
     unsafe {
         let total_len = s.len() as u64;
         let layout = std::alloc::Layout::from_size_align((total_len + 8) as usize, 8).unwrap();
         let new_ptr = std::alloc::alloc(layout);
-        
+
         *(new_ptr as *mut u64) = total_len;
         std::ptr::copy_nonoverlapping(s.as_ptr(), new_ptr.add(8), s.len());
-        
+
         new_ptr
     }
 }
@@ -511,17 +527,18 @@ pub extern "C" fn dotlin_map_keys(map_ptr: *mut DotlinHashMap) -> *mut DotlinArr
     if map_ptr.is_null() {
         return std::ptr::null_mut();
     }
-    
+
     unsafe {
         let map = &*(*map_ptr).data;
-        let keys: Vec<u64> = map.keys()
+        let keys: Vec<u64> = map
+            .keys()
             .map(|k| {
                 // Convert string key to a string object in our format
                 // This is a simplified approach - in a real implementation we'd need to create proper string objects
                 k.as_bytes().iter().fold(0u64, |acc, &b| acc ^ (b as u64)) // Simple hash as placeholder
             })
             .collect();
-            
+
         let capacity = keys.len() as u64;
         let mut vec: Vec<u64> = vec![0; capacity as usize];
         for (i, &key_hash) in keys.iter().enumerate() {
@@ -533,7 +550,7 @@ pub extern "C" fn dotlin_map_keys(map_ptr: *mut DotlinHashMap) -> *mut DotlinArr
             size: capacity,
             capacity,
         };
-        
+
         Box::into_raw(Box::new(array))
     }
 }
@@ -543,11 +560,11 @@ pub extern "C" fn dotlin_map_values(map_ptr: *mut DotlinHashMap) -> *mut DotlinA
     if map_ptr.is_null() {
         return std::ptr::null_mut();
     }
-    
+
     unsafe {
         let map = &*(*map_ptr).data;
         let values: Vec<u64> = map.values().cloned().collect();
-        
+
         let capacity = values.len() as u64;
         let mut vec: Vec<u64> = vec![0; capacity as usize];
         for (i, &value) in values.iter().enumerate() {
@@ -559,7 +576,7 @@ pub extern "C" fn dotlin_map_values(map_ptr: *mut DotlinHashMap) -> *mut DotlinA
             size: capacity,
             capacity,
         };
-        
+
         Box::into_raw(Box::new(array))
     }
 }
@@ -569,7 +586,7 @@ pub extern "C" fn dotlin_map_size(map_ptr: *mut DotlinHashMap) -> u64 {
     if map_ptr.is_null() {
         return 0;
     }
-    
+
     unsafe {
         let map = &*(*map_ptr).data;
         map.len() as u64
@@ -581,7 +598,7 @@ pub extern "C" fn dotlin_map_entries(map_ptr: *mut DotlinHashMap) -> *mut Dotlin
     if map_ptr.is_null() {
         return std::ptr::null_mut();
     }
-    
+
     unsafe {
         let map = &*(*map_ptr).data;
         // For now, return an array of alternating key-value pairs
@@ -593,7 +610,7 @@ pub extern "C" fn dotlin_map_entries(map_ptr: *mut DotlinHashMap) -> *mut Dotlin
             entries.push(key_hash);
             entries.push(value);
         }
-        
+
         let capacity = entries.len() as u64;
         let mut vec: Vec<u64> = vec![0; capacity as usize];
         for (i, &entry) in entries.iter().enumerate() {
@@ -605,7 +622,7 @@ pub extern "C" fn dotlin_map_entries(map_ptr: *mut DotlinHashMap) -> *mut Dotlin
             size: capacity,
             capacity,
         };
-        
+
         Box::into_raw(Box::new(array))
     }
 }

@@ -6,31 +6,31 @@ fn main() {
     // Get the output directory
     let out_dir = env::var("OUT_DIR").unwrap();
     let out_dir_path = Path::new(&out_dir);
-    
+
     // Find the target directory by going up from OUT_DIR
     let target_dir = out_dir_path
-        .parent()  // Remove /out
-        .and_then(|p| p.parent())  // Remove /dotlin_runtime-*
-        .and_then(|p| p.parent())  // Remove /build
-        .and_then(|p| p.parent())  // Remove /target
+        .parent() // Remove /out
+        .and_then(|p| p.parent()) // Remove /dotlin_runtime-*
+        .and_then(|p| p.parent()) // Remove /build
+        .and_then(|p| p.parent()) // Remove /target
         .map(|p| p.to_path_buf())
         .expect("Could not find target directory");
-    
+
     // Determine the workspace root (where Cargo.toml is)
     let workspace_root = target_dir.parent().expect("Could not find workspace root");
-    
+
     // Determine the library directory
     let lib_dir = workspace_root.join("lib");
-    
+
     // Ensure lib directory exists
     fs::create_dir_all(&lib_dir).expect("Could not create lib directory");
-    
+
     // The library name and extension based on the target OS
     #[cfg(windows)]
     let _lib_filename = "dotlin_runtime.lib"; // import library produced alongside DLL
     #[cfg(not(windows))]
     let _lib_filename = "libdotlin_runtime.a";
-    
+
     // Search recursively under several likely output directories for import libraries or DLLs
     let mut found_import: Option<PathBuf> = None;
     let mut found_dll: Option<PathBuf> = None;
@@ -88,7 +88,10 @@ fn main() {
     if let Some(ref import_path) = found_import {
         let dest_path = lib_dir.join("dotlin_runtime.lib");
         match fs::copy(import_path, &dest_path) {
-            Ok(_) => println!("Copied import lib {} to lib/ directory", import_path.display()),
+            Ok(_) => println!(
+                "Copied import lib {} to lib/ directory",
+                import_path.display()
+            ),
             Err(e) => eprintln!("Failed to copy import lib {}: {}", import_path.display(), e),
         }
     }
@@ -106,7 +109,7 @@ fn main() {
     if found_import.is_none() && found_dll.is_none() {
         eprintln!("Warning: could not find built dotlin_runtime artifact under {} (searched common release/deps locations)", target_dir.display());
     }
-    
+
     // Also set up linker arguments to look in the lib directory
     println!("cargo:rustc-link-search=native={}", lib_dir.display());
 }

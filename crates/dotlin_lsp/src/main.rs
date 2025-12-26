@@ -1,5 +1,5 @@
-use tower_lsp::{Client, LanguageServer, LspService, Server};
 use tower_lsp::lsp_types::*;
+use tower_lsp::{Client, LanguageServer, LspService, Server};
 #[derive(Debug)]
 struct Backend {
     client: Client,
@@ -8,14 +8,19 @@ struct Backend {
 
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
-    async fn initialize(&self, _params: InitializeParams) -> tower_lsp::jsonrpc::Result<InitializeResult> {
+    async fn initialize(
+        &self,
+        _params: InitializeParams,
+    ) -> tower_lsp::jsonrpc::Result<InitializeResult> {
         Ok(InitializeResult {
             server_info: Some(ServerInfo {
                 name: "dotlin-lsp".to_string(),
                 version: Some("0.1.0".to_string()),
             }),
             capabilities: ServerCapabilities {
-                text_document_sync: Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL)),
+                text_document_sync: Some(TextDocumentSyncCapability::Kind(
+                    TextDocumentSyncKind::FULL,
+                )),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 completion_provider: Some(CompletionOptions {
                     resolve_provider: Some(false),
@@ -44,10 +49,16 @@ impl LanguageServer for Backend {
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
         let mut documents = self.documents.write().await;
-        documents.insert(params.text_document.uri.to_string(), params.text_document.text.clone());
-        
+        documents.insert(
+            params.text_document.uri.to_string(),
+            params.text_document.text.clone(),
+        );
+
         self.client
-            .log_message(MessageType::INFO, format!("Document opened: {}", params.text_document.uri))
+            .log_message(
+                MessageType::INFO,
+                format!("Document opened: {}", params.text_document.uri),
+            )
             .await;
     }
 
@@ -56,33 +67,43 @@ impl LanguageServer for Backend {
         if let Some(change) = params.content_changes.first() {
             documents.insert(params.text_document.uri.to_string(), change.text.clone());
         }
-        
+
         self.client
-            .log_message(MessageType::INFO, format!("Document changed: {}", params.text_document.uri))
+            .log_message(
+                MessageType::INFO,
+                format!("Document changed: {}", params.text_document.uri),
+            )
             .await;
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
         let mut documents = self.documents.write().await;
         documents.remove(&params.text_document.uri.to_string());
-        
+
         self.client
-            .log_message(MessageType::INFO, format!("Document closed: {}", params.text_document.uri))
+            .log_message(
+                MessageType::INFO,
+                format!("Document closed: {}", params.text_document.uri),
+            )
             .await;
     }
 
     async fn hover(&self, _params: HoverParams) -> tower_lsp::jsonrpc::Result<Option<Hover>> {
         // For now, return a simple hover response
-        let contents = HoverContents::Scalar(MarkedString::String("Dotlin Language Server".to_string()));
+        let contents =
+            HoverContents::Scalar(MarkedString::String("Dotlin Language Server".to_string()));
         let hover = Hover {
             contents,
             range: None,
         };
-        
+
         Ok(Some(hover))
     }
 
-    async fn completion(&self, _params: CompletionParams) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
+    async fn completion(
+        &self,
+        _params: CompletionParams,
+    ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
         // For now, return some basic completions
         let completions = vec![
             CompletionItem {
@@ -104,16 +125,22 @@ impl LanguageServer for Backend {
                 ..Default::default()
             },
         ];
-        
+
         Ok(Some(CompletionResponse::Array(completions)))
     }
 
-    async fn goto_definition(&self, _params: GotoDefinitionParams) -> tower_lsp::jsonrpc::Result<Option<GotoDefinitionResponse>> {
+    async fn goto_definition(
+        &self,
+        _params: GotoDefinitionParams,
+    ) -> tower_lsp::jsonrpc::Result<Option<GotoDefinitionResponse>> {
         // For now, return None
         Ok(None)
     }
 
-    async fn formatting(&self, _params: DocumentFormattingParams) -> tower_lsp::jsonrpc::Result<Option<Vec<TextEdit>>> {
+    async fn formatting(
+        &self,
+        _params: DocumentFormattingParams,
+    ) -> tower_lsp::jsonrpc::Result<Option<Vec<TextEdit>>> {
         // For now, return None (no formatting implemented yet)
         Ok(None)
     }

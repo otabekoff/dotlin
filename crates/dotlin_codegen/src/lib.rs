@@ -120,7 +120,7 @@ impl CodeGenerator {
             DotlinType::Boolean => types::I8,
             DotlinType::String => types::I64,
             DotlinType::Array => types::I64, // Arrays are represented as pointers
-            DotlinType::Char => types::I64, // Char is represented as integer value
+            DotlinType::Char => types::I64,  // Char is represented as integer value
         }
     }
 
@@ -209,421 +209,489 @@ impl CodeGenerator {
             "dotlin_string_compare".to_string(),
             (string_compare, Some(DotlinType::Int)),
         );
-        
+
         // Array functions
         let mut sig_array_new = self.module.make_signature();
         sig_array_new.params.push(AbiParam::new(types::I64)); // element_size
         sig_array_new.params.push(AbiParam::new(types::I64)); // capacity
         sig_array_new.returns.push(AbiParam::new(types::I64));
         self.set_call_conv(&mut sig_array_new);
-        let array_new = self
-            .module
-            .declare_function("dotlin_array_new", Linkage::Import, &sig_array_new)?;
-        self.functions
-            .insert("dotlin_array_new".to_string(), (array_new, Some(DotlinType::Array)));
-        
+        let array_new =
+            self.module
+                .declare_function("dotlin_array_new", Linkage::Import, &sig_array_new)?;
+        self.functions.insert(
+            "dotlin_array_new".to_string(),
+            (array_new, Some(DotlinType::Array)),
+        );
+
         let mut sig_array_get = self.module.make_signature();
         sig_array_get.params.push(AbiParam::new(types::I64)); // array_ptr
         sig_array_get.params.push(AbiParam::new(types::I64)); // index
         sig_array_get.returns.push(AbiParam::new(types::I64));
         self.set_call_conv(&mut sig_array_get);
-        let array_get = self
-            .module
-            .declare_function("dotlin_array_get", Linkage::Import, &sig_array_get)?;
-        self.functions
-            .insert("dotlin_array_get".to_string(), (array_get, Some(DotlinType::Int)));
-        
+        let array_get =
+            self.module
+                .declare_function("dotlin_array_get", Linkage::Import, &sig_array_get)?;
+        self.functions.insert(
+            "dotlin_array_get".to_string(),
+            (array_get, Some(DotlinType::Int)),
+        );
+
         let mut sig_array_set = self.module.make_signature();
         sig_array_set.params.push(AbiParam::new(types::I64)); // array_ptr
         sig_array_set.params.push(AbiParam::new(types::I64)); // index
         sig_array_set.params.push(AbiParam::new(types::I64)); // value
         self.set_call_conv(&mut sig_array_set);
-        let array_set = self
-            .module
-            .declare_function("dotlin_array_set", Linkage::Import, &sig_array_set)?;
+        let array_set =
+            self.module
+                .declare_function("dotlin_array_set", Linkage::Import, &sig_array_set)?;
         self.functions
             .insert("dotlin_array_set".to_string(), (array_set, None));
-        
+
         let mut sig_array_length = self.module.make_signature();
         sig_array_length.params.push(AbiParam::new(types::I64)); // array_ptr
         sig_array_length.returns.push(AbiParam::new(types::I64));
         self.set_call_conv(&mut sig_array_length);
-        let array_length = self
-            .module
-            .declare_function("dotlin_array_length", Linkage::Import, &sig_array_length)?;
-        self.functions
-            .insert("dotlin_array_length".to_string(), (array_length, Some(DotlinType::Int)));
-        
+        let array_length = self.module.declare_function(
+            "dotlin_array_length",
+            Linkage::Import,
+            &sig_array_length,
+        )?;
+        self.functions.insert(
+            "dotlin_array_length".to_string(),
+            (array_length, Some(DotlinType::Int)),
+        );
+
         let mut sig_array_push = self.module.make_signature();
         sig_array_push.params.push(AbiParam::new(types::I64)); // array_ptr
         sig_array_push.params.push(AbiParam::new(types::I64)); // value
         self.set_call_conv(&mut sig_array_push);
-        let array_push = self
-            .module
-            .declare_function("dotlin_array_push", Linkage::Import, &sig_array_push)?;
+        let array_push =
+            self.module
+                .declare_function("dotlin_array_push", Linkage::Import, &sig_array_push)?;
         self.functions
             .insert("dotlin_array_push".to_string(), (array_push, None));
-        
+
         let mut sig_array_pop = self.module.make_signature();
         sig_array_pop.params.push(AbiParam::new(types::I64)); // array_ptr
         sig_array_pop.returns.push(AbiParam::new(types::I64)); // value
         self.set_call_conv(&mut sig_array_pop);
-        let array_pop = self
-            .module
-            .declare_function("dotlin_array_pop", Linkage::Import, &sig_array_pop)?;
-        self.functions
-            .insert("dotlin_array_pop".to_string(), (array_pop, Some(DotlinType::Int)));
-        
+        let array_pop =
+            self.module
+                .declare_function("dotlin_array_pop", Linkage::Import, &sig_array_pop)?;
+        self.functions.insert(
+            "dotlin_array_pop".to_string(),
+            (array_pop, Some(DotlinType::Int)),
+        );
+
         // HashMap functions
         let mut sig_map_new = self.module.make_signature();
         sig_map_new.returns.push(AbiParam::new(types::I64));
         self.set_call_conv(&mut sig_map_new);
-        let map_new = self
-            .module
-            .declare_function("dotlin_map_new", Linkage::Import, &sig_map_new)?;
-        self.functions
-            .insert("dotlin_map_new".to_string(), (map_new, Some(DotlinType::Int)));
-        
+        let map_new =
+            self.module
+                .declare_function("dotlin_map_new", Linkage::Import, &sig_map_new)?;
+        self.functions.insert(
+            "dotlin_map_new".to_string(),
+            (map_new, Some(DotlinType::Int)),
+        );
+
         let mut sig_map_get = self.module.make_signature();
         sig_map_get.params.push(AbiParam::new(types::I64));
         sig_map_get.params.push(AbiParam::new(types::I64));
         sig_map_get.returns.push(AbiParam::new(types::I64));
         self.set_call_conv(&mut sig_map_get);
-        let map_get = self
-            .module
-            .declare_function("dotlin_map_get", Linkage::Import, &sig_map_get)?;
-        self.functions
-            .insert("dotlin_map_get".to_string(), (map_get, Some(DotlinType::Int)));
-        
+        let map_get =
+            self.module
+                .declare_function("dotlin_map_get", Linkage::Import, &sig_map_get)?;
+        self.functions.insert(
+            "dotlin_map_get".to_string(),
+            (map_get, Some(DotlinType::Int)),
+        );
+
         let mut sig_map_set = self.module.make_signature();
         sig_map_set.params.push(AbiParam::new(types::I64));
         sig_map_set.params.push(AbiParam::new(types::I64));
         sig_map_set.params.push(AbiParam::new(types::I64));
         self.set_call_conv(&mut sig_map_set);
-        let map_set = self
-            .module
-            .declare_function("dotlin_map_set", Linkage::Import, &sig_map_set)?;
+        let map_set =
+            self.module
+                .declare_function("dotlin_map_set", Linkage::Import, &sig_map_set)?;
         self.functions
             .insert("dotlin_map_set".to_string(), (map_set, None));
-        
+
         let mut sig_map_remove = self.module.make_signature();
         sig_map_remove.params.push(AbiParam::new(types::I64));
         sig_map_remove.params.push(AbiParam::new(types::I64));
         sig_map_remove.returns.push(AbiParam::new(types::I64));
         self.set_call_conv(&mut sig_map_remove);
-        let map_remove = self
-            .module
-            .declare_function("dotlin_map_remove", Linkage::Import, &sig_map_remove)?;
-        self.functions
-            .insert("dotlin_map_remove".to_string(), (map_remove, Some(DotlinType::Int)));
-        
+        let map_remove =
+            self.module
+                .declare_function("dotlin_map_remove", Linkage::Import, &sig_map_remove)?;
+        self.functions.insert(
+            "dotlin_map_remove".to_string(),
+            (map_remove, Some(DotlinType::Int)),
+        );
+
         let mut sig_map_contains = self.module.make_signature();
         sig_map_contains.params.push(AbiParam::new(types::I64));
         sig_map_contains.params.push(AbiParam::new(types::I64));
         sig_map_contains.returns.push(AbiParam::new(types::I64));
         self.set_call_conv(&mut sig_map_contains);
-        let map_contains = self
-            .module
-            .declare_function("dotlin_map_contains", Linkage::Import, &sig_map_contains)?;
-        self.functions
-            .insert("dotlin_map_contains".to_string(), (map_contains, Some(DotlinType::Int)));
-        
+        let map_contains = self.module.declare_function(
+            "dotlin_map_contains",
+            Linkage::Import,
+            &sig_map_contains,
+        )?;
+        self.functions.insert(
+            "dotlin_map_contains".to_string(),
+            (map_contains, Some(DotlinType::Int)),
+        );
+
         let mut sig_map_free = self.module.make_signature();
         sig_map_free.params.push(AbiParam::new(types::I64));
         self.set_call_conv(&mut sig_map_free);
-        let map_free = self
-            .module
-            .declare_function("dotlin_map_free", Linkage::Import, &sig_map_free)?;
+        let map_free =
+            self.module
+                .declare_function("dotlin_map_free", Linkage::Import, &sig_map_free)?;
         self.functions
             .insert("dotlin_map_free".to_string(), (map_free, None));
-        
+
         // HashMap iteration functions
         let mut sig_map_keys = self.module.make_signature();
         sig_map_keys.params.push(AbiParam::new(types::I64)); // map_ptr
         sig_map_keys.returns.push(AbiParam::new(types::I64)); // array_ptr
         self.set_call_conv(&mut sig_map_keys);
-        let map_keys = self
-            .module
-            .declare_function("dotlin_map_keys", Linkage::Import, &sig_map_keys)?;
-        self.functions
-            .insert("dotlin_map_keys".to_string(), (map_keys, Some(DotlinType::Array)));
-        
+        let map_keys =
+            self.module
+                .declare_function("dotlin_map_keys", Linkage::Import, &sig_map_keys)?;
+        self.functions.insert(
+            "dotlin_map_keys".to_string(),
+            (map_keys, Some(DotlinType::Array)),
+        );
+
         let mut sig_map_values = self.module.make_signature();
         sig_map_values.params.push(AbiParam::new(types::I64)); // map_ptr
         sig_map_values.returns.push(AbiParam::new(types::I64)); // array_ptr
         self.set_call_conv(&mut sig_map_values);
-        let map_values = self
-            .module
-            .declare_function("dotlin_map_values", Linkage::Import, &sig_map_values)?;
-        self.functions
-            .insert("dotlin_map_values".to_string(), (map_values, Some(DotlinType::Array)));
-        
+        let map_values =
+            self.module
+                .declare_function("dotlin_map_values", Linkage::Import, &sig_map_values)?;
+        self.functions.insert(
+            "dotlin_map_values".to_string(),
+            (map_values, Some(DotlinType::Array)),
+        );
+
         let mut sig_map_size = self.module.make_signature();
         sig_map_size.params.push(AbiParam::new(types::I64)); // map_ptr
         sig_map_size.returns.push(AbiParam::new(types::I64)); // size
         self.set_call_conv(&mut sig_map_size);
-        let map_size = self
-            .module
-            .declare_function("dotlin_map_size", Linkage::Import, &sig_map_size)?;
-        self.functions
-            .insert("dotlin_map_size".to_string(), (map_size, Some(DotlinType::Int)));
-        
+        let map_size =
+            self.module
+                .declare_function("dotlin_map_size", Linkage::Import, &sig_map_size)?;
+        self.functions.insert(
+            "dotlin_map_size".to_string(),
+            (map_size, Some(DotlinType::Int)),
+        );
+
         // HashMap iteration functions
         let mut sig_map_entries = self.module.make_signature();
         sig_map_entries.params.push(AbiParam::new(types::I64)); // map_ptr
         sig_map_entries.returns.push(AbiParam::new(types::I64)); // array_ptr
         self.set_call_conv(&mut sig_map_entries);
-        let map_entries = self
-            .module
-            .declare_function("dotlin_map_entries", Linkage::Import, &sig_map_entries)?;
-        self.functions
-            .insert("dotlin_map_entries".to_string(), (map_entries, Some(DotlinType::Array)));
+        let map_entries = self.module.declare_function(
+            "dotlin_map_entries",
+            Linkage::Import,
+            &sig_map_entries,
+        )?;
+        self.functions.insert(
+            "dotlin_map_entries".to_string(),
+            (map_entries, Some(DotlinType::Array)),
+        );
 
         // Iterator runtime functions
         let mut sig_map_iter_new = self.module.make_signature();
         sig_map_iter_new.params.push(AbiParam::new(types::I64)); // map_ptr
         sig_map_iter_new.returns.push(AbiParam::new(types::I64)); // iterator_ptr
         self.set_call_conv(&mut sig_map_iter_new);
-        let map_iter_new = self
-            .module
-            .declare_function("dotlin_map_iter_new", Linkage::Import, &sig_map_iter_new)?;
-        self.functions
-            .insert("dotlin_map_iter_new".to_string(), (map_iter_new, Some(DotlinType::Int)));
+        let map_iter_new = self.module.declare_function(
+            "dotlin_map_iter_new",
+            Linkage::Import,
+            &sig_map_iter_new,
+        )?;
+        self.functions.insert(
+            "dotlin_map_iter_new".to_string(),
+            (map_iter_new, Some(DotlinType::Int)),
+        );
 
         let mut sig_iterator_next = self.module.make_signature();
         sig_iterator_next.params.push(AbiParam::new(types::I64)); // iterator_ptr
         sig_iterator_next.returns.push(AbiParam::new(types::I64)); // value
         self.set_call_conv(&mut sig_iterator_next);
-        let iterator_next = self
-            .module
-            .declare_function("dotlin_iterator_next", Linkage::Import, &sig_iterator_next)?;
-        self.functions
-            .insert("dotlin_iterator_next".to_string(), (iterator_next, Some(DotlinType::Int)));
-        
+        let iterator_next = self.module.declare_function(
+            "dotlin_iterator_next",
+            Linkage::Import,
+            &sig_iterator_next,
+        )?;
+        self.functions.insert(
+            "dotlin_iterator_next".to_string(),
+            (iterator_next, Some(DotlinType::Int)),
+        );
+
         // Type conversion functions
         let mut sig_string_to_int = self.module.make_signature();
         sig_string_to_int.params.push(AbiParam::new(types::I64)); // string_ptr
         sig_string_to_int.returns.push(AbiParam::new(types::I64)); // integer result
         self.set_call_conv(&mut sig_string_to_int);
-        let string_to_int = self
-            .module
-            .declare_function("dotlin_string_to_int", Linkage::Import, &sig_string_to_int)?;
-        self.functions
-            .insert("dotlin_string_to_int".to_string(), (string_to_int, Some(DotlinType::Int)));
-        
+        let string_to_int = self.module.declare_function(
+            "dotlin_string_to_int",
+            Linkage::Import,
+            &sig_string_to_int,
+        )?;
+        self.functions.insert(
+            "dotlin_string_to_int".to_string(),
+            (string_to_int, Some(DotlinType::Int)),
+        );
+
         let mut sig_string_to_float = self.module.make_signature();
         sig_string_to_float.params.push(AbiParam::new(types::I64)); // string_ptr
         sig_string_to_float.returns.push(AbiParam::new(types::F64)); // float result
         self.set_call_conv(&mut sig_string_to_float);
-        let string_to_float = self
-            .module
-            .declare_function("dotlin_string_to_float", Linkage::Import, &sig_string_to_float)?;
-        self.functions
-            .insert("dotlin_string_to_float".to_string(), (string_to_float, Some(DotlinType::Float)));
-        
+        let string_to_float = self.module.declare_function(
+            "dotlin_string_to_float",
+            Linkage::Import,
+            &sig_string_to_float,
+        )?;
+        self.functions.insert(
+            "dotlin_string_to_float".to_string(),
+            (string_to_float, Some(DotlinType::Float)),
+        );
+
         let mut sig_int_to_float = self.module.make_signature();
         sig_int_to_float.params.push(AbiParam::new(types::I64)); // integer
         sig_int_to_float.returns.push(AbiParam::new(types::F64)); // float result
         self.set_call_conv(&mut sig_int_to_float);
-        let int_to_float = self
-            .module
-            .declare_function("dotlin_int_to_float", Linkage::Import, &sig_int_to_float)?;
-        self.functions
-            .insert("dotlin_int_to_float".to_string(), (int_to_float, Some(DotlinType::Float)));
-        
+        let int_to_float = self.module.declare_function(
+            "dotlin_int_to_float",
+            Linkage::Import,
+            &sig_int_to_float,
+        )?;
+        self.functions.insert(
+            "dotlin_int_to_float".to_string(),
+            (int_to_float, Some(DotlinType::Float)),
+        );
+
         let mut sig_float_to_int = self.module.make_signature();
         sig_float_to_int.params.push(AbiParam::new(types::F64)); // float
         sig_float_to_int.returns.push(AbiParam::new(types::I64)); // integer result
         self.set_call_conv(&mut sig_float_to_int);
-        let float_to_int = self
-            .module
-            .declare_function("dotlin_float_to_int", Linkage::Import, &sig_float_to_int)?;
-        self.functions
-            .insert("dotlin_float_to_int".to_string(), (float_to_int, Some(DotlinType::Int)));
-        
+        let float_to_int = self.module.declare_function(
+            "dotlin_float_to_int",
+            Linkage::Import,
+            &sig_float_to_int,
+        )?;
+        self.functions.insert(
+            "dotlin_float_to_int".to_string(),
+            (float_to_int, Some(DotlinType::Int)),
+        );
+
         let mut sig_to_string = self.module.make_signature();
         sig_to_string.params.push(AbiParam::new(types::I64)); // value
         sig_to_string.returns.push(AbiParam::new(types::I64)); // string_ptr
         self.set_call_conv(&mut sig_to_string);
-        let to_string = self
-            .module
-            .declare_function("dotlin_to_string", Linkage::Import, &sig_to_string)?;
-        self.functions
-            .insert("dotlin_to_string".to_string(), (to_string, Some(DotlinType::String)));
-        
+        let to_string =
+            self.module
+                .declare_function("dotlin_to_string", Linkage::Import, &sig_to_string)?;
+        self.functions.insert(
+            "dotlin_to_string".to_string(),
+            (to_string, Some(DotlinType::String)),
+        );
+
         let mut sig_float_to_string = self.module.make_signature();
         sig_float_to_string.params.push(AbiParam::new(types::F64)); // float
         sig_float_to_string.returns.push(AbiParam::new(types::I64)); // string_ptr
         self.set_call_conv(&mut sig_float_to_string);
-        let float_to_string = self
-            .module
-            .declare_function("dotlin_float_to_string", Linkage::Import, &sig_float_to_string)?;
-        self.functions
-            .insert("dotlin_float_to_string".to_string(), (float_to_string, Some(DotlinType::String)));
-        
+        let float_to_string = self.module.declare_function(
+            "dotlin_float_to_string",
+            Linkage::Import,
+            &sig_float_to_string,
+        )?;
+        self.functions.insert(
+            "dotlin_float_to_string".to_string(),
+            (float_to_string, Some(DotlinType::String)),
+        );
+
         let mut sig_bool_to_string = self.module.make_signature();
         sig_bool_to_string.params.push(AbiParam::new(types::I8)); // boolean
         sig_bool_to_string.returns.push(AbiParam::new(types::I64)); // string_ptr
         self.set_call_conv(&mut sig_bool_to_string);
-        let bool_to_string = self
-            .module
-            .declare_function("dotlin_bool_to_string", Linkage::Import, &sig_bool_to_string)?;
-        self.functions
-            .insert("dotlin_bool_to_string".to_string(), (bool_to_string, Some(DotlinType::String)));
-        
+        let bool_to_string = self.module.declare_function(
+            "dotlin_bool_to_string",
+            Linkage::Import,
+            &sig_bool_to_string,
+        )?;
+        self.functions.insert(
+            "dotlin_bool_to_string".to_string(),
+            (bool_to_string, Some(DotlinType::String)),
+        );
+
         let mut sig_char_to_string = self.module.make_signature();
         sig_char_to_string.params.push(AbiParam::new(types::I64)); // char as int
         sig_char_to_string.returns.push(AbiParam::new(types::I64)); // string_ptr
         self.set_call_conv(&mut sig_char_to_string);
-        let char_to_string = self
-            .module
-            .declare_function("dotlin_char_to_string", Linkage::Import, &sig_char_to_string)?;
-        self.functions
-            .insert("dotlin_char_to_string".to_string(), (char_to_string, Some(DotlinType::String)));
-        
+        let char_to_string = self.module.declare_function(
+            "dotlin_char_to_string",
+            Linkage::Import,
+            &sig_char_to_string,
+        )?;
+        self.functions.insert(
+            "dotlin_char_to_string".to_string(),
+            (char_to_string, Some(DotlinType::String)),
+        );
+
         // Math functions
         let mut sig_math_abs = self.module.make_signature();
         sig_math_abs.params.push(AbiParam::new(types::F64));
         sig_math_abs.returns.push(AbiParam::new(types::F64));
         self.set_call_conv(&mut sig_math_abs);
-        let math_abs = self
-            .module
-            .declare_function("dotlin_math_abs", Linkage::Import, &sig_math_abs)?;
+        let math_abs =
+            self.module
+                .declare_function("dotlin_math_abs", Linkage::Import, &sig_math_abs)?;
         self.functions
             .insert("abs".to_string(), (math_abs, Some(DotlinType::Float)));
-        
+
         let mut sig_math_min = self.module.make_signature();
         sig_math_min.params.push(AbiParam::new(types::F64));
         sig_math_min.params.push(AbiParam::new(types::F64));
         sig_math_min.returns.push(AbiParam::new(types::F64));
         self.set_call_conv(&mut sig_math_min);
-        let math_min = self
-            .module
-            .declare_function("dotlin_math_min", Linkage::Import, &sig_math_min)?;
+        let math_min =
+            self.module
+                .declare_function("dotlin_math_min", Linkage::Import, &sig_math_min)?;
         self.functions
             .insert("min".to_string(), (math_min, Some(DotlinType::Float)));
-        
+
         let mut sig_math_max = self.module.make_signature();
         sig_math_max.params.push(AbiParam::new(types::F64));
         sig_math_max.params.push(AbiParam::new(types::F64));
         sig_math_max.returns.push(AbiParam::new(types::F64));
         self.set_call_conv(&mut sig_math_max);
-        let math_max = self
-            .module
-            .declare_function("dotlin_math_max", Linkage::Import, &sig_math_max)?;
+        let math_max =
+            self.module
+                .declare_function("dotlin_math_max", Linkage::Import, &sig_math_max)?;
         self.functions
             .insert("max".to_string(), (math_max, Some(DotlinType::Float)));
-        
+
         let mut sig_math_sqrt = self.module.make_signature();
         sig_math_sqrt.params.push(AbiParam::new(types::F64));
         sig_math_sqrt.returns.push(AbiParam::new(types::F64));
         self.set_call_conv(&mut sig_math_sqrt);
-        let math_sqrt = self
-            .module
-            .declare_function("dotlin_math_sqrt", Linkage::Import, &sig_math_sqrt)?;
+        let math_sqrt =
+            self.module
+                .declare_function("dotlin_math_sqrt", Linkage::Import, &sig_math_sqrt)?;
         self.functions
             .insert("sqrt".to_string(), (math_sqrt, Some(DotlinType::Float)));
-        
+
         let mut sig_math_pow = self.module.make_signature();
         sig_math_pow.params.push(AbiParam::new(types::F64));
         sig_math_pow.params.push(AbiParam::new(types::F64));
         sig_math_pow.returns.push(AbiParam::new(types::F64));
         self.set_call_conv(&mut sig_math_pow);
-        let math_pow = self
-            .module
-            .declare_function("dotlin_math_pow", Linkage::Import, &sig_math_pow)?;
+        let math_pow =
+            self.module
+                .declare_function("dotlin_math_pow", Linkage::Import, &sig_math_pow)?;
         self.functions
             .insert("pow".to_string(), (math_pow, Some(DotlinType::Float)));
-        
+
         let mut sig_math_sin = self.module.make_signature();
         sig_math_sin.params.push(AbiParam::new(types::F64));
         sig_math_sin.returns.push(AbiParam::new(types::F64));
         self.set_call_conv(&mut sig_math_sin);
-        let math_sin = self
-            .module
-            .declare_function("dotlin_math_sin", Linkage::Import, &sig_math_sin)?;
+        let math_sin =
+            self.module
+                .declare_function("dotlin_math_sin", Linkage::Import, &sig_math_sin)?;
         self.functions
             .insert("sin".to_string(), (math_sin, Some(DotlinType::Float)));
-        
+
         let mut sig_math_cos = self.module.make_signature();
         sig_math_cos.params.push(AbiParam::new(types::F64));
         sig_math_cos.returns.push(AbiParam::new(types::F64));
         self.set_call_conv(&mut sig_math_cos);
-        let math_cos = self
-            .module
-            .declare_function("dotlin_math_cos", Linkage::Import, &sig_math_cos)?;
+        let math_cos =
+            self.module
+                .declare_function("dotlin_math_cos", Linkage::Import, &sig_math_cos)?;
         self.functions
             .insert("cos".to_string(), (math_cos, Some(DotlinType::Float)));
-        
+
         let mut sig_math_tan = self.module.make_signature();
         sig_math_tan.params.push(AbiParam::new(types::F64));
         sig_math_tan.returns.push(AbiParam::new(types::F64));
         self.set_call_conv(&mut sig_math_tan);
-        let math_tan = self
-            .module
-            .declare_function("dotlin_math_tan", Linkage::Import, &sig_math_tan)?;
+        let math_tan =
+            self.module
+                .declare_function("dotlin_math_tan", Linkage::Import, &sig_math_tan)?;
         self.functions
             .insert("tan".to_string(), (math_tan, Some(DotlinType::Float)));
-        
+
         let mut sig_math_floor = self.module.make_signature();
         sig_math_floor.params.push(AbiParam::new(types::F64));
         sig_math_floor.returns.push(AbiParam::new(types::F64));
         self.set_call_conv(&mut sig_math_floor);
-        let math_floor = self
-            .module
-            .declare_function("dotlin_math_floor", Linkage::Import, &sig_math_floor)?;
+        let math_floor =
+            self.module
+                .declare_function("dotlin_math_floor", Linkage::Import, &sig_math_floor)?;
         self.functions
             .insert("floor".to_string(), (math_floor, Some(DotlinType::Float)));
-        
+
         let mut sig_math_ceil = self.module.make_signature();
         sig_math_ceil.params.push(AbiParam::new(types::F64));
         sig_math_ceil.returns.push(AbiParam::new(types::F64));
         self.set_call_conv(&mut sig_math_ceil);
-        let math_ceil = self
-            .module
-            .declare_function("dotlin_math_ceil", Linkage::Import, &sig_math_ceil)?;
+        let math_ceil =
+            self.module
+                .declare_function("dotlin_math_ceil", Linkage::Import, &sig_math_ceil)?;
         self.functions
             .insert("ceil".to_string(), (math_ceil, Some(DotlinType::Float)));
-        
+
         let mut sig_math_round = self.module.make_signature();
         sig_math_round.params.push(AbiParam::new(types::F64));
         sig_math_round.returns.push(AbiParam::new(types::F64));
         self.set_call_conv(&mut sig_math_round);
-        let math_round = self
-            .module
-            .declare_function("dotlin_math_round", Linkage::Import, &sig_math_round)?;
+        let math_round =
+            self.module
+                .declare_function("dotlin_math_round", Linkage::Import, &sig_math_round)?;
         self.functions
             .insert("round".to_string(), (math_round, Some(DotlinType::Float)));
-        
+
         let mut sig_math_log = self.module.make_signature();
         sig_math_log.params.push(AbiParam::new(types::F64));
         sig_math_log.returns.push(AbiParam::new(types::F64));
         self.set_call_conv(&mut sig_math_log);
-        let math_log = self
-            .module
-            .declare_function("dotlin_math_log", Linkage::Import, &sig_math_log)?;
+        let math_log =
+            self.module
+                .declare_function("dotlin_math_log", Linkage::Import, &sig_math_log)?;
         self.functions
             .insert("log".to_string(), (math_log, Some(DotlinType::Float)));
-        
+
         let mut sig_math_exp = self.module.make_signature();
         sig_math_exp.params.push(AbiParam::new(types::F64));
         sig_math_exp.returns.push(AbiParam::new(types::F64));
         self.set_call_conv(&mut sig_math_exp);
-        let math_exp = self
-            .module
-            .declare_function("dotlin_math_exp", Linkage::Import, &sig_math_exp)?;
+        let math_exp =
+            self.module
+                .declare_function("dotlin_math_exp", Linkage::Import, &sig_math_exp)?;
         self.functions
             .insert("exp".to_string(), (math_exp, Some(DotlinType::Float)));
-        
+
         let mut sig_math_pi = self.module.make_signature();
         sig_math_pi.returns.push(AbiParam::new(types::F64));
         self.set_call_conv(&mut sig_math_pi);
-        let math_pi = self
-            .module
-            .declare_function("dotlin_math_pi", Linkage::Import, &sig_math_pi)?;
+        let math_pi =
+            self.module
+                .declare_function("dotlin_math_pi", Linkage::Import, &sig_math_pi)?;
         self.functions
             .insert("PI".to_string(), (math_pi, Some(DotlinType::Float)));
-        
+
         let mut sig_math_e = self.module.make_signature();
         sig_math_e.returns.push(AbiParam::new(types::F64));
         self.set_call_conv(&mut sig_math_e);
@@ -707,9 +775,9 @@ impl CodeGenerator {
         }
 
         let product = self.module.finish();
-        product
-            .emit()
-            .map_err(|e| CompileError::Module(Box::new(ModuleError::Backend(anyhow::anyhow!("{:?}", e)))))
+        product.emit().map_err(|e| {
+            CompileError::Module(Box::new(ModuleError::Backend(anyhow::anyhow!("{:?}", e))))
+        })
     }
 
     fn compile_statement(
@@ -838,17 +906,20 @@ impl CodeGenerator {
                 }
                 Ok(terminated)
             }
-            Statement::ForEach { variable, iterable, body } => {
+            Statement::ForEach {
+                variable,
+                iterable,
+                body,
+            } => {
                 // Compile the iterable expression
-                let (iterable_val, iterable_dt) = Self::compile_expression(
-                    module, builder, strings, functions, iterable, vars,
-                )?;
-                
+                let (iterable_val, iterable_dt) =
+                    Self::compile_expression(module, builder, strings, functions, iterable, vars)?;
+
                 // Create blocks for the loop
                 let header = builder.create_block();
                 let body_block = builder.create_block();
                 let exit = builder.create_block();
-                
+
                 // Detect `iter()` call on a map: compile as runtime iterator using dotlin_iterator_next
                 let mut is_iterator_call = false;
                 if let ExpressionKind::Call { callee, .. } = &*iterable.kind {
@@ -869,7 +940,8 @@ impl CodeGenerator {
 
                     // Call dotlin_iterator_next
                     let next_func_id = functions.get("dotlin_iterator_next").unwrap().0;
-                    let next_func_ref = module.declare_func_in_func(next_func_id, &mut builder.func);
+                    let next_func_ref =
+                        module.declare_func_in_func(next_func_id, &mut builder.func);
                     let next_call = builder.ins().call(next_func_ref, &[iter_ptr]);
                     let next_val = builder.inst_results(next_call)[0];
 
@@ -895,7 +967,13 @@ impl CodeGenerator {
                             local_vars.insert(name.clone(), (loop_var, DotlinType::Int));
 
                             let loop_body_terminated = Self::compile_statement(
-                                module, builder, strings, functions, body, &mut local_vars, var_index,
+                                module,
+                                builder,
+                                strings,
+                                functions,
+                                body,
+                                &mut local_vars,
+                                var_index,
                             )?;
 
                             if !loop_body_terminated {
@@ -926,7 +1004,13 @@ impl CodeGenerator {
                                 }
 
                                 let loop_body_terminated = Self::compile_statement(
-                                    module, builder, strings, functions, body, &mut local_vars, var_index,
+                                    module,
+                                    builder,
+                                    strings,
+                                    functions,
+                                    body,
+                                    &mut local_vars,
+                                    var_index,
                                 )?;
 
                                 if !loop_body_terminated {
@@ -948,52 +1032,58 @@ impl CodeGenerator {
                     let index_var = Variable::from_u32(*var_index);
                     *var_index += 1;
                     builder.declare_var(index_var, types::I64);
-                    
+
                     // Initialize index to 0
                     let zero = builder.ins().iconst(types::I64, 0);
                     builder.def_var(index_var, zero);
-                    
+
                     // Create a variable to hold the array length
                     let length_var = Variable::from_u32(*var_index);
                     *var_index += 1;
                     builder.declare_var(length_var, types::I64);
-                    
+
                     // Get the array length
                     let length_func_id = functions.get("dotlin_array_length").unwrap().0;
-                    let length_func_ref = module.declare_func_in_func(length_func_id, &mut builder.func);
+                    let length_func_ref =
+                        module.declare_func_in_func(length_func_id, &mut builder.func);
                     let length_call = builder.ins().call(length_func_ref, &[iterable_val]);
                     let length_val = builder.inst_results(length_call)[0];
                     builder.def_var(length_var, length_val);
-                    
+
                     // Jump to header block
                     builder.ins().jump(header, &[]);
                     builder.switch_to_block(header);
-                    
+
                     // Compare index with length
                     let current_index = builder.use_var(index_var);
                     let current_length = builder.use_var(length_var);
-                    let cond = builder.ins().icmp(IntCC::SignedLessThan, current_index, current_length);
-                    
+                    let cond =
+                        builder
+                            .ins()
+                            .icmp(IntCC::SignedLessThan, current_index, current_length);
+
                     // Branch based on condition
                     builder.ins().brif(cond, body_block, &[], exit, &[]);
-                    
+
                     // Body block
                     builder.switch_to_block(body_block);
                     builder.seal_block(body_block);
-                    
+
                     // Get the current element
                     let current_index = builder.use_var(index_var);
                     let get_func_id = functions.get("dotlin_array_get").unwrap().0;
                     let get_func_ref = module.declare_func_in_func(get_func_id, &mut builder.func);
-                    let get_call = builder.ins().call(get_func_ref, &[iterable_val, current_index]);
+                    let get_call = builder
+                        .ins()
+                        .call(get_func_ref, &[iterable_val, current_index]);
                     let element_val = builder.inst_results(get_call)[0];
-                    
+
                     // Create variable for the loop variable
                     let loop_var: Variable = Variable::from_u32(*var_index);
                     *var_index += 1;
                     builder.declare_var(loop_var, types::I64);
                     builder.def_var(loop_var, element_val);
-                    
+
                     // Add to local variables
                     let mut local_vars = vars.clone();
                     let var_name = match variable {
@@ -1001,92 +1091,108 @@ impl CodeGenerator {
                         dotlin_ast::ForEachTarget::Tuple(names) => names[0].clone(),
                     };
                     local_vars.insert(var_name, (loop_var, DotlinType::Int));
-                    
+
                     // Compile the loop body
                     let loop_body_terminated = Self::compile_statement(
-                        module, builder, strings, functions, body, &mut local_vars, var_index,
+                        module,
+                        builder,
+                        strings,
+                        functions,
+                        body,
+                        &mut local_vars,
+                        var_index,
                     )?;
-                    
+
                     // Increment index
                     let current_index = builder.use_var(index_var);
                     let one = builder.ins().iconst(types::I64, 1);
                     let new_index = builder.ins().iadd(current_index, one);
                     builder.def_var(index_var, new_index);
-                    
+
                     // Jump back to header if body didn't terminate
                     if !loop_body_terminated {
                         builder.ins().jump(header, &[]);
                     }
-                    
+
                     builder.seal_block(header);
                     builder.switch_to_block(exit);
                     builder.seal_block(exit);
                 } else {
                     // For HashMaps, we need to get the keys and iterate through them
                     // HashMap is represented as Int pointer
-                    
+
                     // Get the keys array
                     let keys_func_id = functions.get("dotlin_map_keys").unwrap().0;
-                    let keys_func_ref = module.declare_func_in_func(keys_func_id, &mut builder.func);
+                    let keys_func_ref =
+                        module.declare_func_in_func(keys_func_id, &mut builder.func);
                     let keys_call = builder.ins().call(keys_func_ref, &[iterable_val]);
                     let keys_array = builder.inst_results(keys_call)[0];
-                    
+
                     // Create a variable to hold the index
                     let index_var = Variable::from_u32(*var_index);
                     *var_index += 1;
                     builder.declare_var(index_var, types::I64);
-                    
+
                     // Initialize index to 0
                     let zero = builder.ins().iconst(types::I64, 0);
                     builder.def_var(index_var, zero);
-                    
+
                     // Create a variable to hold the keys array length
                     let length_var = Variable::from_u32(*var_index);
                     *var_index += 1;
                     builder.declare_var(length_var, types::I64);
-                    
+
                     // Get the keys array length
                     let length_func_id = functions.get("dotlin_array_length").unwrap().0;
-                    let length_func_ref = module.declare_func_in_func(length_func_id, &mut builder.func);
+                    let length_func_ref =
+                        module.declare_func_in_func(length_func_id, &mut builder.func);
                     let length_call = builder.ins().call(length_func_ref, &[keys_array]);
                     let length_val = builder.inst_results(length_call)[0];
                     builder.def_var(length_var, length_val);
-                    
+
                     // Jump to header block
                     builder.ins().jump(header, &[]);
                     builder.switch_to_block(header);
-                    
+
                     // Compare index with length
                     let current_index = builder.use_var(index_var);
                     let current_length = builder.use_var(length_var);
-                    let cond = builder.ins().icmp(IntCC::SignedLessThan, current_index, current_length);
-                    
+                    let cond =
+                        builder
+                            .ins()
+                            .icmp(IntCC::SignedLessThan, current_index, current_length);
+
                     // Branch based on condition
                     builder.ins().brif(cond, body_block, &[], exit, &[]);
-                    
+
                     // Body block
                     builder.switch_to_block(body_block);
                     builder.seal_block(body_block);
-                    
+
                     // Get the current key
                     let current_index = builder.use_var(index_var);
                     let get_func_id = functions.get("dotlin_array_get").unwrap().0;
                     let get_func_ref = module.declare_func_in_func(get_func_id, &mut builder.func);
-                    let get_call = builder.ins().call(get_func_ref, &[keys_array, current_index]);
+                    let get_call = builder
+                        .ins()
+                        .call(get_func_ref, &[keys_array, current_index]);
                     let key_val = builder.inst_results(get_call)[0];
-                    
+
                     // Get the value for this key from the original map
                     let get_value_func_id = functions.get("dotlin_map_get").unwrap().0;
-                    let get_value_func_ref = module.declare_func_in_func(get_value_func_id, &mut builder.func);
-                    let get_value_call = builder.ins().call(get_value_func_ref, &[iterable_val, key_val]);
+                    let get_value_func_ref =
+                        module.declare_func_in_func(get_value_func_id, &mut builder.func);
+                    let get_value_call = builder
+                        .ins()
+                        .call(get_value_func_ref, &[iterable_val, key_val]);
                     let _value_val = builder.inst_results(get_value_call)[0];
-                    
+
                     // Create variable for the loop variable (for key-value pairs, we'll use the key)
                     let loop_var = Variable::from_u32(*var_index);
                     *var_index += 1;
                     builder.declare_var(loop_var, types::I64);
                     builder.def_var(loop_var, key_val); // In a for-each loop, we typically iterate over keys
-                    
+
                     // Add to local variables
                     let mut local_vars = vars.clone();
                     let var_name = match variable {
@@ -1094,33 +1200,38 @@ impl CodeGenerator {
                         dotlin_ast::ForEachTarget::Tuple(names) => names[0].clone(),
                     };
                     local_vars.insert(var_name, (loop_var, DotlinType::Int));
-                    
+
                     // Compile the loop body
                     let loop_body_terminated = Self::compile_statement(
-                        module, builder, strings, functions, body, &mut local_vars, var_index,
+                        module,
+                        builder,
+                        strings,
+                        functions,
+                        body,
+                        &mut local_vars,
+                        var_index,
                     )?;
-                    
+
                     // Increment index
                     let current_index = builder.use_var(index_var);
                     let one = builder.ins().iconst(types::I64, 1);
                     let new_index = builder.ins().iadd(current_index, one);
                     builder.def_var(index_var, new_index);
-                    
+
                     // Jump back to header if body didn't terminate
                     if !loop_body_terminated {
                         builder.ins().jump(header, &[]);
                     }
-                    
+
                     builder.seal_block(header);
                     builder.switch_to_block(exit);
                     builder.seal_block(exit);
                 }
-                
+
                 Ok(false)
             }
         }
     }
-
 
     fn compile_expression(
         module: &mut ObjectModule,
@@ -1212,7 +1323,9 @@ impl CodeGenerator {
                             _ => {
                                 // For now, we'll handle boolean operations at runtime
                                 // This requires more complex logic to handle short-circuiting
-                                return Err(CompileError::UndefinedVariable("Boolean operators not supported in this context".to_string()));
+                                return Err(CompileError::UndefinedVariable(
+                                    "Boolean operators not supported in this context".to_string(),
+                                ));
                             }
                         };
                         let cmp_val = builder.ins().icmp(cond, res, zero);
@@ -1237,12 +1350,20 @@ impl CodeGenerator {
                         BinaryOp::And | BinaryOp::Or => {
                             // For now, we'll handle boolean operations at runtime
                             // This requires more complex logic to handle short-circuiting
-                            return Err(CompileError::UndefinedVariable("Boolean operators not supported in this context".to_string()));
+                            return Err(CompileError::UndefinedVariable(
+                                "Boolean operators not supported in this context".to_string(),
+                            ));
                         }
-                        BinaryOp::PlusEqual | BinaryOp::MinusEqual | BinaryOp::StarEqual | BinaryOp::SlashEqual => {
+                        BinaryOp::PlusEqual
+                        | BinaryOp::MinusEqual
+                        | BinaryOp::StarEqual
+                        | BinaryOp::SlashEqual => {
                             // Compound assignment operators need special handling
                             // For now, we'll return an error until we implement them
-                            return Err(CompileError::UndefinedVariable("Compound assignment operators not implemented in this context".to_string()));
+                            return Err(CompileError::UndefinedVariable(
+                                "Compound assignment operators not implemented in this context"
+                                    .to_string(),
+                            ));
                         }
                     };
                     let out_dt = match operator {
@@ -1276,12 +1397,20 @@ impl CodeGenerator {
                         BinaryOp::And | BinaryOp::Or => {
                             // For now, we'll handle boolean operations at runtime
                             // This requires more complex logic to handle short-circuiting
-                            return Err(CompileError::UndefinedVariable("Boolean operators not supported in this context".to_string()));
+                            return Err(CompileError::UndefinedVariable(
+                                "Boolean operators not supported in this context".to_string(),
+                            ));
                         }
-                        BinaryOp::PlusEqual | BinaryOp::MinusEqual | BinaryOp::StarEqual | BinaryOp::SlashEqual => {
+                        BinaryOp::PlusEqual
+                        | BinaryOp::MinusEqual
+                        | BinaryOp::StarEqual
+                        | BinaryOp::SlashEqual => {
                             // Compound assignment operators need special handling
                             // For now, we'll return an error until we implement them
-                            return Err(CompileError::UndefinedVariable("Compound assignment operators not implemented in this context".to_string()));
+                            return Err(CompileError::UndefinedVariable(
+                                "Compound assignment operators not implemented in this context"
+                                    .to_string(),
+                            ));
                         }
                     };
                     let out_dt = match operator {
@@ -1313,14 +1442,9 @@ impl CodeGenerator {
                 if let ExpressionKind::MemberAccess { object, member } = &*callee.kind {
                     // This is a method call on an object
                     let (obj_val, obj_dt) = Self::compile_expression(
-                        module,
-                        builder,
-                        strings,
-                        functions,
-                        object,
-                        vars,
+                        module, builder, strings, functions, object, vars,
                     )?;
-                    
+
                     // Handle type conversion methods and HashMap iteration methods
                     match (obj_dt, member.as_str()) {
                         (DotlinType::String, "toInt") => {
@@ -1351,7 +1475,8 @@ impl CodeGenerator {
                             let results = builder.inst_results(call);
                             Ok((results[0], DotlinType::Int))
                         }
-                        (DotlinType::Int, "toString") => { // Int to string (handles both Int and Char)
+                        (DotlinType::Int, "toString") => {
+                            // Int to string (handles both Int and Char)
                             let (func_id, _) = functions.get("dotlin_to_string").unwrap();
                             let func_ref = module.declare_func_in_func(*func_id, &mut builder.func);
                             let call = builder.ins().call(func_ref, &[obj_val]);
@@ -1375,7 +1500,12 @@ impl CodeGenerator {
                         // Array methods
                         (DotlinType::Array, "push") => {
                             let (arg_val, _) = Self::compile_expression(
-                                module, builder, strings, functions, &arguments[0], vars,
+                                module,
+                                builder,
+                                strings,
+                                functions,
+                                &arguments[0],
+                                vars,
                             )?;
                             let (func_id, _) = functions.get("dotlin_array_push").unwrap();
                             let func_ref = module.declare_func_in_func(*func_id, &mut builder.func);
@@ -1391,28 +1521,32 @@ impl CodeGenerator {
                             Ok((results[0], DotlinType::Int)) // returns the popped value
                         }
                         // HashMap iteration methods
-                        (DotlinType::Int, "keys") => { // HashMap is represented as Int pointer
+                        (DotlinType::Int, "keys") => {
+                            // HashMap is represented as Int pointer
                             let (func_id, _) = functions.get("dotlin_map_keys").unwrap();
                             let func_ref = module.declare_func_in_func(*func_id, &mut builder.func);
                             let call = builder.ins().call(func_ref, &[obj_val]);
                             let results = builder.inst_results(call);
                             Ok((results[0], DotlinType::Array))
                         }
-                        (DotlinType::Int, "values") => { // HashMap is represented as Int pointer
+                        (DotlinType::Int, "values") => {
+                            // HashMap is represented as Int pointer
                             let (func_id, _) = functions.get("dotlin_map_values").unwrap();
                             let func_ref = module.declare_func_in_func(*func_id, &mut builder.func);
                             let call = builder.ins().call(func_ref, &[obj_val]);
                             let results = builder.inst_results(call);
                             Ok((results[0], DotlinType::Array))
                         }
-                        (DotlinType::Int, "size") => { // HashMap is represented as Int pointer
+                        (DotlinType::Int, "size") => {
+                            // HashMap is represented as Int pointer
                             let (func_id, _) = functions.get("dotlin_map_size").unwrap();
                             let func_ref = module.declare_func_in_func(*func_id, &mut builder.func);
                             let call = builder.ins().call(func_ref, &[obj_val]);
                             let results = builder.inst_results(call);
                             Ok((results[0], DotlinType::Int))
                         }
-                        (DotlinType::Int, "entries") => { // HashMap is represented as Int pointer
+                        (DotlinType::Int, "entries") => {
+                            // HashMap is represented as Int pointer
                             let (func_id, _) = functions.get("dotlin_map_entries").unwrap();
                             let func_ref = module.declare_func_in_func(*func_id, &mut builder.func);
                             let call = builder.ins().call(func_ref, &[obj_val]);
@@ -1628,7 +1762,7 @@ impl CodeGenerator {
                     let func_ref = module.declare_func_in_func(func_id, &mut builder.func);
                     let call = builder.ins().call(func_ref, &[element_size, capacity]);
                     let array_ptr = builder.inst_results(call)[0];
-                    
+
                     // Add each element to the array
                     for (i, element) in elements.iter().enumerate() {
                         let (element_val, _) = Self::compile_expression(
@@ -1636,40 +1770,43 @@ impl CodeGenerator {
                         )?;
                         let index = builder.ins().iconst(types::I64, i as i64);
                         let set_func_id = functions.get("dotlin_array_set").unwrap().0;
-                        let set_func_ref = module.declare_func_in_func(set_func_id, &mut builder.func);
-                        let call = builder.ins().call(set_func_ref, &[array_ptr, index, element_val]);
+                        let set_func_ref =
+                            module.declare_func_in_func(set_func_id, &mut builder.func);
+                        let call = builder
+                            .ins()
+                            .call(set_func_ref, &[array_ptr, index, element_val]);
                         let _ = builder.inst_results(call);
                     }
-                    
+
                     Ok((array_ptr, DotlinType::Array))
                 }
             }
             ExpressionKind::Index { array, index } => {
-                let (array_ptr, _) = Self::compile_expression(
-                    module, builder, strings, functions, array, vars,
-                )?;
-                let (index_val, _) = Self::compile_expression(
-                    module, builder, strings, functions, index, vars,
-                )?;
-                
+                let (array_ptr, _) =
+                    Self::compile_expression(module, builder, strings, functions, array, vars)?;
+                let (index_val, _) =
+                    Self::compile_expression(module, builder, strings, functions, index, vars)?;
+
                 // We need to determine if this is array or map indexing based on the type
                 // For now, we'll default to array indexing, but we'll need to handle both
-                let func_name = if array.resolved_type.as_ref().is_some_and(|t| {
-                    matches!(t, Type::Map(_, _))
-                }) {
+                let func_name = if array
+                    .resolved_type
+                    .as_ref()
+                    .is_some_and(|t| matches!(t, Type::Map(_, _)))
+                {
                     "dotlin_map_get"
                 } else {
                     "dotlin_array_get"
                 };
-                
+
                 let func_id = functions.get(func_name).unwrap().0;
                 let func_ref = module.declare_func_in_func(func_id, &mut builder.func);
                 let call = builder.ins().call(func_ref, &[array_ptr, index_val]);
                 let results = builder.inst_results(call);
-                
+
                 // Return type depends on the operation - for now default to Int
                 let return_type = DotlinType::Int;
-                
+
                 Ok((results[0], return_type))
             }
             ExpressionKind::HashMapLiteral { pairs } => {
@@ -1678,23 +1815,23 @@ impl CodeGenerator {
                 let func_ref = module.declare_func_in_func(func_id, &mut builder.func);
                 let call = builder.ins().call(func_ref, &[]);
                 let map_ptr = builder.inst_results(call)[0];
-                
+
                 // Add each key-value pair to the map
                 for (key, value) in pairs {
-                    let (key_val, _) = Self::compile_expression(
-                        module, builder, strings, functions, key, vars,
-                    )?;
-                    let (value_val, _) = Self::compile_expression(
-                        module, builder, strings, functions, value, vars,
-                    )?;
-                    
+                    let (key_val, _) =
+                        Self::compile_expression(module, builder, strings, functions, key, vars)?;
+                    let (value_val, _) =
+                        Self::compile_expression(module, builder, strings, functions, value, vars)?;
+
                     // Call dotlin_map_set to add the key-value pair
                     let set_func_id = functions.get("dotlin_map_set").unwrap().0;
                     let set_func_ref = module.declare_func_in_func(set_func_id, &mut builder.func);
-                    let call = builder.ins().call(set_func_ref, &[map_ptr, key_val, value_val]);
+                    let call = builder
+                        .ins()
+                        .call(set_func_ref, &[map_ptr, key_val, value_val]);
                     let _ = builder.inst_results(call);
                 }
-                
+
                 Ok((map_ptr, DotlinType::Int)) // HashMap is represented as a pointer (Int)
             }
         }

@@ -148,14 +148,14 @@ impl<'a> Parser<'a> {
             Some(t) => return Err(ParseError::UnexpectedToken(t)),
             None => return Err(ParseError::UnexpectedEOF),
         };
-        
+
         // Check for array syntax like Int[]
         if self.peek() == Some(&Token::LBracket) {
             self.advance(); // consume [
             self.expect(Token::RBracket)?; // expect and consume ]
             return Ok(Type::Array(Box::new(base_type)));
         }
-        
+
         Ok(base_type)
     }
 
@@ -281,12 +281,18 @@ impl<'a> Parser<'a> {
                 self.parse_expression()?
             } else {
                 // unexpected token
-                return Err(ParseError::UnexpectedToken(self.advance().unwrap_or(Token::Error)));
+                return Err(ParseError::UnexpectedToken(
+                    self.advance().unwrap_or(Token::Error),
+                ));
             };
 
             let body = Box::new(self.parse_statement()?);
 
-            return Ok(Statement::ForEach { variable, iterable, body });
+            return Ok(Statement::ForEach {
+                variable,
+                iterable,
+                body,
+            });
         }
 
         if self.peek() == Some(&Token::Return) {
@@ -341,8 +347,11 @@ impl<'a> Parser<'a> {
                 // Using UnexpectedToken for now, ideally "Invalid assignment target"
                 return Err(ParseError::UnexpectedToken(Token::Equal));
             }
-        } else if self.peek() == Some(&Token::PlusEqual) || self.peek() == Some(&Token::MinusEqual) ||
-                  self.peek() == Some(&Token::StarEqual) || self.peek() == Some(&Token::SlashEqual) {
+        } else if self.peek() == Some(&Token::PlusEqual)
+            || self.peek() == Some(&Token::MinusEqual)
+            || self.peek() == Some(&Token::StarEqual)
+            || self.peek() == Some(&Token::SlashEqual)
+        {
             // Handle compound assignment operators
             let op_token = self.advance().unwrap();
             let value = self.parse_expression()?; // Right-associative
@@ -356,14 +365,17 @@ impl<'a> Parser<'a> {
                     Token::SlashEqual => BinaryOp::Div,
                     _ => unreachable!(),
                 };
-                
+
                 let binary_expr = Expression::new(ExpressionKind::Binary {
                     left: Expression::new(ExpressionKind::Variable(name.clone())),
                     operator: binary_op,
                     right: value,
                 });
-                
-                return Ok(Expression::new(ExpressionKind::Assignment { name, value: binary_expr }));
+
+                return Ok(Expression::new(ExpressionKind::Assignment {
+                    name,
+                    value: binary_expr,
+                }));
             } else {
                 // Using UnexpectedToken for now, ideally "Invalid assignment target"
                 return Err(ParseError::UnexpectedToken(op_token));
@@ -569,10 +581,7 @@ impl<'a> Parser<'a> {
                     self.advance(); // consume [
                     let index = self.parse_expression()?;
                     self.expect(Token::RBracket)?;
-                    expr = Expression::new(ExpressionKind::Index {
-                        array: expr,
-                        index,
-                    });
+                    expr = Expression::new(ExpressionKind::Index { array: expr, index });
                 }
                 Token::Increment => {
                     // Parse postfix increment: expr++
@@ -656,7 +665,7 @@ impl<'a> Parser<'a> {
                         self.expect(Token::Colon)?; // Expect colon between key and value
                         let value = self.parse_expression()?;
                         pairs.push((key, value));
-                        
+
                         if self.peek() == Some(&Token::Comma) {
                             self.advance();
                         } else {
