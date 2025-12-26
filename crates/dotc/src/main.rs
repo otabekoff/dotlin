@@ -105,13 +105,16 @@ fn main() {
         .arg("-o")
         .arg(&exe_path);
 
-    // Determine runtime search dirs (cli override, then workspace lib)
+    // Determine runtime search dirs (cli override, then absolute workspace lib)
     let mut runtime_dirs: Vec<PathBuf> = Vec::new();
     if let Some(ref path) = cli.runtime_path {
-        runtime_dirs.push(path.clone());
+        // Prefer canonicalized path, fall back to provided
+        let rp = path.canonicalize().unwrap_or_else(|_| path.clone());
+        runtime_dirs.push(rp);
     }
-    runtime_dirs.push(PathBuf::from("."));
-    runtime_dirs.push(PathBuf::from("lib"));
+    let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    runtime_dirs.push(cwd.clone());
+    runtime_dirs.push(cwd.join("lib"));
 
     for d in &runtime_dirs {
         cmd.arg("-L").arg(d);

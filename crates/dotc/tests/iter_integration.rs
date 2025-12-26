@@ -36,16 +36,17 @@ fn compile_and_run_iter_example() {
                 if val.get("reason").and_then(|r| r.as_str()) == Some("compiler-artifact") {
                     if let Some(filenames) = val.get("filenames").and_then(|f| f.as_array()) {
                         for fname in filenames {
-                            if let Some(path_str) = fname.as_str() {
-                                let p = std::path::PathBuf::from(path_str);
-                                if let Some(name) = p.file_name().and_then(|n| n.to_str()) {
-                                    let ln = name.to_ascii_lowercase();
-                                    if ln.contains("dotlin_runtime") && (ln.ends_with(".lib") || ln.ends_with(".dll") ) {
-                                        let _ = std::fs::copy(&p, lib_dir.join(name));
-                                        copied.push(name.to_string());
+                                    if let Some(path_str) = fname.as_str() {
+                                    let p = std::path::PathBuf::from(path_str);
+                                    if let Some(name) = p.file_name().and_then(|n| n.to_str()) {
+                                        let ln = name.to_ascii_lowercase();
+                                        // Accept MSVC import libs, DLLs, Unix shared libs, macOS dylibs, and static archives
+                                        if ln.contains("dotlin_runtime") && (ln.ends_with(".lib") || ln.ends_with(".dll") || ln.ends_with(".so") || ln.ends_with(".dylib") || ln.ends_with(".a")) {
+                                            let _ = std::fs::copy(&p, lib_dir.join(name));
+                                            copied.push(name.to_string());
+                                        }
                                     }
                                 }
-                            }
                         }
                     }
                 }
@@ -62,10 +63,12 @@ fn compile_and_run_iter_example() {
         }
 
         if !imported.exists() {
-            // also accept static archive on unix: libdotlin_runtime.a
+            // also accept static archive or shared library on unix: libdotlin_runtime.a, .so, or .dylib
             let alt2 = lib_dir.join("libdotlin_runtime.a");
-            if alt2.exists() {
-                // nothing to do, linker will find libdotlin_runtime.a in lib/
+            let alt3 = lib_dir.join("libdotlin_runtime.so");
+            let alt4 = lib_dir.join("libdotlin_runtime.dylib");
+            if alt2.exists() || alt3.exists() || alt4.exists() {
+                // nothing to do, linker will find these in lib/
             } else {
                 panic!("dotlin_runtime import not found after build. copied: {:?}; cargo stdout: {}", copied, stdout_str);
             }
@@ -106,7 +109,7 @@ fn compile_and_run_iter_example() {
         assert!(build_status.success(), "building dotlin_runtime failed");
     }
 
-    // Ensure the produced executable can find the runtime DLL on Windows
+    // Ensure the produced executable can find the runtime library and is runnable
     let mut cmd = Command::new(out_exe.as_os_str());
     if cfg!(target_os = "windows") {
         // Add workspace lib and candidate target release dirs to PATH
@@ -121,6 +124,34 @@ fn compile_and_run_iter_example() {
             cmd.env("PATH", entries);
         } else {
             cmd.env("PATH", path_entries.join(";"));
+        }
+    }
+    // On unix-like systems, set LD_LIBRARY_PATH and ensure the produced file is executable
+    if !cfg!(target_os = "windows") {
+        let mut path_entries: Vec<String> = Vec::new();
+        path_entries.push(workspace_root.join("lib").display().to_string());
+        path_entries.push(workspace_root.join("target").join("release").display().to_string());
+        path_entries.push(workspace_root.join("target").join("release").join("deps").display().to_string());
+        if let Ok(ld) = std::env::var("LD_LIBRARY_PATH") {
+            let mut entries = path_entries.join(":");
+            entries.push_str(":");
+            entries.push_str(&ld);
+            cmd.env("LD_LIBRARY_PATH", entries);
+        } else {
+            cmd.env("LD_LIBRARY_PATH", path_entries.join(":"));
+        }
+
+        // Ensure executable bit is set for the produced file
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Ok(metadata) = std::fs::metadata(&out_exe) {
+                let mut perms = metadata.permissions();
+                let mode = perms.mode();
+                if mode & 0o100 == 0 {
+                    let _ = std::fs::set_permissions(&out_exe, std::fs::Permissions::from_mode(0o755));
+                }
+            }
         }
     }
 
