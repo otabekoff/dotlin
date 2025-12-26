@@ -173,16 +173,33 @@ fn compile_and_run_iter_tuple_example_codegen() {
     let exit_code = output.status.code();
 
     if !output.status.success() {
-        eprintln!("=== Executable failed ===");
+        eprintln!("=== EXECUTABLE FAILED ===");
         eprintln!("Exit status: {:?}", output.status);
         eprintln!("Exit code: {:?}", output.status.code());
+
         #[cfg(unix)]
         {
             use std::os::unix::process::ExitStatusExt;
-            eprintln!("Signal: {:?}", output.status.signal());
+            if let Some(signal) = output.status.signal() {
+                eprintln!("Killed by signal: {} ({})", signal,
+                    match signal {
+                        6 => "SIGABRT",
+                        11 => "SIGSEGV (segmentation fault)",
+                        _ => "unknown",
+                    });
+            }
         }
-        eprintln!("Stdout:\n{}", stdout);
-        eprintln!("Stderr:\n{}", stderr);
+
+        eprintln!("\n--- STDOUT ---");
+        eprintln!("{}", String::from_utf8_lossy(&output.stdout));
+        eprintln!("\n--- STDERR ---");
+        eprintln!("{}", String::from_utf8_lossy(&output.stderr));
+
+        eprintln!("\n--- Attempting to run with gdb (if available) ---");
+        let _ = Command::new("gdb")
+            .args(&["-batch", "-ex", "run", "-ex", "bt", "--args"])
+            .arg(&out_exe)
+            .status();
 
         // Show staged lib contents
         eprintln!("Workspace lib dir: {:?}", lib_dir);
@@ -224,4 +241,38 @@ fn compile_and_run_iter_tuple_example_codegen() {
 
     // The program computes 10 + 20 = 30 and prints it
     assert!(stdout.contains("30"), "unexpected stdout: {}\nstderr: {}\nexit: {:?}", stdout, stderr, exit_code);
+}
+
+#[test]
+fn test_basic_hello_world_codegen() {
+    // Workspace root
+    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let workspace_root = manifest.parent().unwrap().parent().unwrap();
+
+    let src = workspace_root.join("test_basic_hello_world.lin");
+    let _ = std::fs::write(&src, r#"fn main() { println(\"Hello\"); }"#);
+
+    let out_exe = workspace_root.join("test_basic_hello_world_out.exe");
+
+    let status = Command::new("cargo")
+        .arg("run")
+        .arg("-p")
+        .arg("dotc")
+        .arg("--")
+        .arg(src.as_os_str())
+        .arg("-o")
+        .arg(out_exe.as_os_str())
+        .current_dir(workspace_root)
+        .status()
+        .expect("failed to run dotc");
+
+    assert!(status.success(), "dotc failed to compile basic example");
+
+    let output = Command::new(&out_exe)
+        .output()
+        .expect("failed to run basic example");
+
+    assert!(output.status.success(), "basic hello world failed to run: stdout={} stderr={}",
+            String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
+    assert!(String::from_utf8_lossy(&output.stdout).contains("Hello"), "unexpected stdout");
 }
