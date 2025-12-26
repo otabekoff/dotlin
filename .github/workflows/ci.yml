@@ -47,21 +47,57 @@ jobs:
         path: target
         key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Build and stage runtime artifacts
+    - name: Build and stage runtime artifacts (Linux)
+      if: runner.os == 'Linux'
       env:
         RUSTC_WRAPPER: ""
+      shell: bash
       run: |
-        echo "Building dotlin_runtime to stage runtime artifacts"
+        echo "Building dotlin_runtime to stage runtime artifacts (linux)"
         cargo build -p dotlin_runtime --release || true
         mkdir -p lib || true
-        if [ "${{ runner.os }}" = "Linux" ]; then
-          cp target/release/libdotlin_runtime.so lib/ 2>/dev/null || true
-          cp target/release/libdotlin_runtime.a lib/ 2>/dev/null || true
-        elif [ "${{ runner.os }}" = "macOS" ]; then
-          cp target/release/libdotlin_runtime.dylib lib/ 2>/dev/null || true
-          cp target/release/libdotlin_runtime.a lib/ 2>/dev/null || true
-        fi
+        cp target/release/libdotlin_runtime.so lib/ 2>/dev/null || true
+        cp target/release/libdotlin_runtime.a lib/ 2>/dev/null || true
         echo "Staged lib contents:"; ls -la lib || true
+
+    - name: Build and stage runtime artifacts (macOS)
+      if: runner.os == 'macOS'
+      env:
+        RUSTC_WRAPPER: ""
+      shell: bash
+      run: |
+        echo "Building dotlin_runtime to stage runtime artifacts (macos)"
+        cargo build -p dotlin_runtime --release || true
+        mkdir -p lib || true
+        cp target/release/libdotlin_runtime.dylib lib/ 2>/dev/null || true
+        cp target/release/libdotlin_runtime.a lib/ 2>/dev/null || true
+        echo "Staged lib contents:"; ls -la lib || true
+
+    - name: Build and stage runtime artifacts (Windows)
+      if: runner.os == 'Windows'
+      env:
+        RUSTC_WRAPPER: ""
+      shell: pwsh
+      run: |
+        echo "Building dotlin_runtime to stage runtime artifacts (windows)"
+        cargo build -p dotlin_runtime --release || exit 0
+        New-Item -ItemType Directory -Path lib -Force | Out-Null
+        $files = @(
+          'target\release\dotlin_runtime.dll',
+          'target\release\dotlin_runtime.lib',
+          'target\release\dotlin_runtime.dll.lib',
+          'target\release\deps\dotlin_runtime.dll'
+        )
+        foreach ($f in $files) {
+          if (Test-Path $f) {
+            Copy-Item -Path $f -Destination lib -Force -ErrorAction SilentlyContinue
+          }
+        }
+        # Normalize import lib name if necessary
+        if (-not (Test-Path lib\dotlin_runtime.lib) -and (Test-Path lib\dotlin_runtime.dll.lib)) {
+          Copy-Item lib\dotlin_runtime.dll.lib lib\dotlin_runtime.lib -Force
+        }
+        Write-Output "Staged lib contents:"; Get-ChildItem -Path lib -Force -ErrorAction SilentlyContinue
     
     - name: Run tests
       env:
