@@ -222,16 +222,21 @@ jobs:
         REM Normalize MSVC import-lib name if necessary
         if not exist release\lib\dotlin_runtime.lib if exist release\lib\dotlin_runtime.dll.lib copy release\lib\dotlin_runtime.dll.lib release\lib\dotlin_runtime.lib
 
-    - name: Verify runtime artifacts
+    - name: Verify runtime artifacts (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
       run: |
-        echo "Listing release/lib:" && dir release\lib || true
-        if "%RUNNER_OS%" == "Windows" (
-          if not exist release\lib\dotlin_runtime.lib ( echo "Missing dotlin_runtime.lib" & exit 1 )
-          if not exist release\lib\dotlin_runtime.dll ( echo "Missing dotlin_runtime.dll" & exit 1 )
-        ) else (
-          # For Unix, accept any of .so, .dylib, or .a
-          sh -c 'ls release/lib | grep -E "libdotlin_runtime\.(so|dylib|a)" >/dev/null || (echo "Missing libdotlin_runtime.(so|dylib|a)" && exit 1)'
-        )
+        Write-Output "Listing release/lib:"; Get-ChildItem -Path release\lib -Force -ErrorAction SilentlyContinue || Write-Output "no release/lib"
+        if (-not (Test-Path release\lib\dotlin_runtime.lib)) { Write-Error "Missing dotlin_runtime.lib"; exit 1 }
+        if (-not (Test-Path release\lib\dotlin_runtime.dll)) { Write-Error "Missing dotlin_runtime.dll"; exit 1 }
+
+    - name: Verify runtime artifacts (Unix)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        echo "Listing release/lib:" && ls -la release/lib || true
+        # For Unix, accept any of .so, .dylib, or .a
+        sh -c 'ls release/lib | grep -E "libdotlin_runtime\.(so|dylib|a)" >/dev/null || (echo "Missing libdotlin_runtime.(so|dylib|a)" && exit 1)'
     
     - name: Create archive (tar.gz)
       if: matrix.archive_ext == 'tar.gz'
