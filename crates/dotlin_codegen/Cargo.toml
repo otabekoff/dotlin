@@ -1,0 +1,24 @@
+[package]
+name = "dotlin_codegen"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+# dotlin_mir.workspace = true
+# dotlin_span.workspace = true
+
+# inkwell = { workspace = true, optional = true }
+# cranelift.workspace = true
+# cranelift-codegen.workspace = true
+# cranelift-frontend.workspace = true
+# cranelift-module.workspace = true
+# object.workspace = true
+
+# [features]
+# default = ["llvm"]
+# llvm = ["inkwell"]
+# cranelift-backend = []
+
+[package.metadata]
+# Minimal placeholder crate for local workspace builds.

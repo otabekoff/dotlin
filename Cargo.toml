@@ -1,0 +1,112 @@
+[package]
+name = "dotlin"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+
+[workspace]
+resolver = "2"
+members = [
+        "crates/dotlin_cli",
+    #     "crates/dotlin_lexer",
+    #     "crates/dotlin_parser",
+    #     "crates/dotlin_semantic",
+    #     "crates/dotlin_mir",
+    #     "crates/dotlin_codegen",
+    #     "crates/dotlin_runtime",
+    #     "crates/dotlin_std",
+    #     "crates/dotlin_ffi",
+    #     "crates/dotlin_lsp",
+    #     "crates/dotlin_fmt",
+    #     "crates/dotlin_test",
+    #     "crates/dotlin_pkg",
+    #     "crates/dotlin_diagnostics",
+    #     "crates/dotlin_span",
+    #     "crates/dotlin_driver",
+    #     "crates/dotlin_macro",
+    #     "crates/dotlin_symbol",
+    #     "crates/dotlin_metadata",
+    #     "tools/*",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.80"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/dotlin-lang/dotlin"
+authors = ["Dotlin Contributors"]
+
+[workspace.dependencies]
+# Internal dependencies
+# dotlin_lexer = { path = "crates/dotlin_lexer" }
+# dotlin_parser = { path = "crates/dotlin_parser" }
+# dotlin_semantic = { path = "crates/dotlin_semantic" }
+# dotlin_mir = { path = "crates/dotlin_mir" }
+# dotlin_codegen = { path = "crates/dotlin_codegen" }
+# dotlin_runtime = { path = "crates/dotlin_runtime" }
+# dotlin_diagnostics = { path = "crates/dotlin_diagnostics" }
+# dotlin_span = { path = "crates/dotlin_span" }
+# dotlin_symbol = { path = "crates/dotlin_symbol" }
+# dotlin_driver = { path = "crates/dotlin_driver" }
+# dotlin_pkg = { path = "crates/dotlin_pkg" }
+# dotlin_ffi = { path = "crates/dotlin_ffi" }
+# dotlin_lsp = { path = "crates/dotlin_lsp" }
+# dotlin_fmt = { path = "crates/dotlin_fmt" }
+# dotlin_test = { path = "crates/dotlin_test" }
+# dotlin_macro = { path = "crates/dotlin_macro" }
+# dotlin_metadata = { path = "crates/dotlin_metadata" }
+
+# External dependencies
+clap = { version = "4.5", features = ["derive"] }
+anyhow = "1.0"
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+ariadne = "0.4"
+codespan-reporting = "0.11"
+logos = "0.14"
+lalrpop = "0.21"
+inkwell = { version = "0.5", features = ["llvm18-0"] }
+cranelift = "0.109"
+cranelift-codegen = "0.109"
+cranelift-frontend = "0.109"
+cranelift-module = "0.109"
+object = "0.36"
+tower-lsp = "0.20"
+lsp-types = "0.95"
+tokio = { version = "1.38", features = ["full"] }
+async-trait = "0.1"
+dashmap = "6.0"
+rayon = "1.10"
+parking_lot = "0.12"
+once_cell = "1.19"
+crossbeam = "0.8"
+indexmap = "2.2"
+rustc-hash = "2.0"
+petgraph = "0.6"
+salsa = "0.17"
+
+[profile.dev]
+opt-level = 0
+debug = true
+split-debuginfo = "unpacked"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true
+panic = "abort"
+# dotlin_driver.workspace = true
+
+[profile.bench]
+inherits = "release"
+
+[profile.test]
+opt-level = 1

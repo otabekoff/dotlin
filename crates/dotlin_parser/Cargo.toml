@@ -1,0 +1,16 @@
+[package]
+name = "dotlin_parser"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+dotlin_lexer.workspace = true
+dotlin_span.workspace = true
+dotlin_diagnostics.workspace = true
+
+[build-dependencies]
+lalrpop.workspace = true
+
+[dev-dependencies]
+insta = "1.39"

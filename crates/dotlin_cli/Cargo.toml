@@ -1,0 +1,33 @@
+[package]
+name = "dotlin_cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "dotlinc"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+# clap = { workspace = true }
+# dotlin_lexer.workspace = true
+# dotlin_parser.workspace = true
+# dotlin_semantic.workspace = true
+# dotlin_mir.workspace = true
+# dotlin_codegen.workspace = true
+# dotlin_driver.workspace = true
+# dotlin_pkg.workspace = true
+# dotlin_diagnostics.workspace = true
+
+# anyhow.workspace = true
+# tracing.workspace = true
+# tracing-subscriber.workspace = true
+# serde.workspace = true
+# toml.workspace = true
+
+[package.metadata]
+# Profiles are now defined at the workspace root to avoid
+# the "profiles for the non root package will be ignored"
+# warning. See workspace `Cargo.toml` for active profiles.
+

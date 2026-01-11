@@ -1,0 +1,19 @@
+[package]
+name = "dotlin_lexer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+dotlin_span.workspace = true
+dotlin_diagnostics.workspace = true
+
+logos.workspace = true
+unicode-xid = "0.2"
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "lexer_bench"
+harness = false

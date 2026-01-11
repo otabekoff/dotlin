@@ -1,0 +1,4 @@
+[toolchain]
+channel = "1.92.0"                                              # Adjust for Rust 2024 availability
+components = ["rustfmt", "clippy", "rust-src", "rust-analyzer"]
+profile = "minimal"

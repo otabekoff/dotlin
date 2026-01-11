@@ -1,0 +1,21 @@
+[package]
+name = "dotlin_lsp"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "dotlin-lsp"
+path = "src/main.rs"
+
+[dependencies]
+dotlin_driver.workspace = true
+dotlin_parser.workspace = true
+dotlin_semantic.workspace = true
+
+tower-lsp.workspace = true
+lsp-types.workspace = true
+tokio.workspace = true
+async-trait.workspace = true
+dashmap.workspace = true
+tracing.workspace = true
