@@ -1,13 +1,27 @@
 {
   "name": "dotlin-language",
-  "displayName": "Dotlin",
-  "publisher": "dotlin",
+  "displayName": "Dotlin Language Support",
+  "description": "Language support for Dotlin (.lin files)",
   "version": "0.1.0",
+  "publisher": "dotlin",
+  "icon": "images/icon.png",
   "engines": {
-    "vscode": "^1.50.0"
+    "vscode": "^1.108.0"
   },
+  "type": "module",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Snippets"
+  ],
+  "keywords": [
+    "dotlin",
+    "lin",
+    "kotlin",
+    "native"
   ],
   "repository": {
     "type": "git",
@@ -17,14 +31,22 @@
     "url": "https://github.com/otabekoff/dotlin/issues"
   },
   "homepage": "https://github.com/otabekoff/dotlin#readme",
-  "icon": "images/icon.png",
   "scripts": {
     "package": "vsce package",
     "lint": "echo \"no lint configured\"",
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
     "build:icon": "inkscape \"$PWD/images/icon.svg\" --export-type=png --export-filename=\"$PWD/images/icon.png\" -w 128 -h 128 || rsvg-convert -w 128 -h 128 -o \"$PWD/images/icon.png\" \"$PWD/images/icon.svg\" || echo \"Error: Install Inkscape or librsvg (rsvg-convert) to build the icon\""
   },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
   "devDependencies": {
-    "vsce": "^2.10.0"
+    "@types/node": "^25.0.6",
+    "@types/vscode": "^1.108.1",
+    "@vscode/vsce": "^3.7.1",
+    "typescript": "^5.9.3"
   },
   "contributes": {
     "languages": [
@@ -37,7 +59,11 @@
         "extensions": [
           ".lin"
         ],
-        "configuration": "./language-configuration.json"
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./images/icon.png",
+          "dark": "./images/icon.png"
+        }
       }
     ],
     "grammars": [
@@ -45,12 +71,43 @@
         "language": "dotlin",
         "scopeName": "source.dotlin",
         "path": "./syntaxes/dotlin.tmLanguage.json"
+      },
+      {
+        "scopeName": "markdown.dotlin.codeblock",
+        "path": "./syntaxes/codeblock.json",
+        "injectTo": [
+          "text.html.markdown"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.block.dotlin": "dotlin"
+        }
       }
     ],
     "snippets": [
       {
         "language": "dotlin",
         "path": "./snippets/dotlin.json"
+      }
+    ],
+    "configuration": {
+      "title": "Dotlin",
+      "properties": {
+        "dotlin.lsp.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Dotlin Language Server"
+        },
+        "dotlin.lsp.path": {
+          "type": "string",
+          "default": "dotlin-lsp",
+          "description": "Path to Dotlin LSP server executable"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "dotlin.evaluate",
+        "title": "Dotlin: Evaluate Selection or Line"
       }
     ]
   }
