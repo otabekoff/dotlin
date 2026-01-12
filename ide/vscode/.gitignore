@@ -1,0 +1,10 @@
+node_modules/
+.vscode/
+dist/
+out/
+*.vsix
+.DS_Store
+npm-debug.log*
+yarn-error.log
+package-lock.json
+.vscode-test/

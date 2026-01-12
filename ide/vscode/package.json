@@ -1,0 +1,57 @@
+{
+  "name": "dotlin-language",
+  "displayName": "Dotlin",
+  "publisher": "dotlin",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.50.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/otabekoff/dotlin"
+  },
+  "bugs": {
+    "url": "https://github.com/otabekoff/dotlin/issues"
+  },
+  "homepage": "https://github.com/otabekoff/dotlin#readme",
+  "icon": "images/icon.png",
+  "scripts": {
+    "package": "vsce package",
+    "lint": "echo \"no lint configured\"",
+    "build:icon": "inkscape \"$PWD/images/icon.svg\" --export-type=png --export-filename=\"$PWD/images/icon.png\" -w 128 -h 128 || rsvg-convert -w 128 -h 128 -o \"$PWD/images/icon.png\" \"$PWD/images/icon.svg\" || echo \"Error: Install Inkscape or librsvg (rsvg-convert) to build the icon\""
+  },
+  "devDependencies": {
+    "vsce": "^2.10.0"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "dotlin",
+        "aliases": [
+          "Dotlin",
+          "dotlin"
+        ],
+        "extensions": [
+          ".lin"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "dotlin",
+        "scopeName": "source.dotlin",
+        "path": "./syntaxes/dotlin.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "dotlin",
+        "path": "./snippets/dotlin.json"
+      }
+    ]
+  }
+}

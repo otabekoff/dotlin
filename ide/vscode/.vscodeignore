@@ -1,0 +1,11 @@
+node_modules
+.vscode/
+*.vsix
+dist/
+out/
+coverage/
+npm-debug.log*
+yarn-error.log
+.DS_Store
+target/
+*.tgz

@@ -1,0 +1,61 @@
+{
+  "Dotlin: main function": {
+    "prefix": "main",
+    "body": [
+      "fun main(${1:args}: Array<String>) {",
+      "    ${0:// TODO: program entry}",
+      "}"
+    ],
+    "description": "Create a Dotlin main entry function"
+  },
+  "Dotlin: println": {
+    "prefix": "println",
+    "body": ["println(${1:expr})$0"],
+    "description": "Print to stdout with newline"
+  },
+  "Dotlin: print": {
+    "prefix": "print",
+    "body": ["print(${1:expr})$0"],
+    "description": "Print to stdout without newline"
+  },
+  "Dotlin: val": {
+    "prefix": "val",
+    "body": ["val ${1:name}: ${2:Type} = ${3:value}$0"],
+    "description": "Immutable variable declaration"
+  },
+  "Dotlin: var": {
+    "prefix": "var",
+    "body": ["var ${1:name}: ${2:Type} = ${3:value}$0"],
+    "description": "Mutable variable declaration"
+  },
+  "Dotlin: function": {
+    "prefix": "fun",
+    "body": [
+      "fun ${1:name}(${2:params}): ${3:ReturnType} {",
+      "    ${0:// body}",
+      "}"
+    ],
+    "description": "Function declaration"
+  },
+  "Dotlin: class": {
+    "prefix": "class",
+    "body": ["class ${1:Name}(${2:params}) {", "    ${0:// members}", "}"],
+    "description": "Class declaration"
+  },
+  "Dotlin: for-loop": {
+    "prefix": "for",
+    "body": ["for (${1:item} in ${2:collection}) {", "    ${0:// body}", "}"],
+    "description": "For loop over collection"
+  },
+  "Dotlin: if-else": {
+    "prefix": "if",
+    "body": [
+      "if (${1:cond}) {",
+      "    ${2:// then}",
+      "} else {",
+      "    ${0:// else}",
+      "}"
+    ],
+    "description": "If-else statement"
+  }
+}

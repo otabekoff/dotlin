@@ -1,0 +1,14 @@
+/home/otabek/Projects/langs/dotlin/crates/dotlin_lexer/target/debug/deps/serde-6f2a68c4291481bf.d: /home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/otabek/Projects/langs/dotlin/crates/dotlin_lexer/target/debug/build/serde-acd5b2669130c5a6/out/private.rs
+
+/home/otabek/Projects/langs/dotlin/crates/dotlin_lexer/target/debug/deps/libserde-6f2a68c4291481bf.rlib: /home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/otabek/Projects/langs/dotlin/crates/dotlin_lexer/target/debug/build/serde-acd5b2669130c5a6/out/private.rs
+
+/home/otabek/Projects/langs/dotlin/crates/dotlin_lexer/target/debug/deps/libserde-6f2a68c4291481bf.rmeta: /home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/otabek/Projects/langs/dotlin/crates/dotlin_lexer/target/debug/build/serde-acd5b2669130c5a6/out/private.rs
+
+/home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs:
+/home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs:
+/home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs:
+/home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs:
+/home/otabek/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs:
+/home/otabek/Projects/langs/dotlin/crates/dotlin_lexer/target/debug/build/serde-acd5b2669130c5a6/out/private.rs:
+
+# env-dep:OUT_DIR=/home/otabek/Projects/langs/dotlin/crates/dotlin_lexer/target/debug/build/serde-acd5b2669130c5a6/out
