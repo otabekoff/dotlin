@@ -2,34 +2,15 @@
 name = "dotlin"
 version = "0.1.0"
 edition = "2024"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 
 
 [workspace]
 resolver = "2"
-members = [
-        "crates/dotlin_cli",
-    #     "crates/dotlin_lexer",
-    #     "crates/dotlin_parser",
-    #     "crates/dotlin_semantic",
-    #     "crates/dotlin_mir",
-    #     "crates/dotlin_codegen",
-    #     "crates/dotlin_runtime",
-    #     "crates/dotlin_std",
-    #     "crates/dotlin_ffi",
-    #     "crates/dotlin_lsp",
-    #     "crates/dotlin_fmt",
-    #     "crates/dotlin_test",
-    #     "crates/dotlin_pkg",
-    #     "crates/dotlin_diagnostics",
-    #     "crates/dotlin_span",
-    #     "crates/dotlin_driver",
-    #     "crates/dotlin_macro",
-    #     "crates/dotlin_symbol",
-    #     "crates/dotlin_metadata",
-    #     "tools/*",
-]
+# members = ["crates/*", "tools/*", "examples/*"]
+members = ["crates/*"]
 
 [workspace.package]
 version = "0.1.0"
@@ -41,8 +22,9 @@ authors = ["Dotlin Contributors"]
 
 [workspace.dependencies]
 # Internal dependencies
-# dotlin_lexer = { path = "crates/dotlin_lexer" }
-# dotlin_parser = { path = "crates/dotlin_parser" }
+dotlin_cli = { path = "crates/dotlin_cli" }
+dotlin_lexer = { path = "crates/dotlin_lexer" }
+dotlin_parser = { path = "crates/dotlin_parser" }
 # dotlin_semantic = { path = "crates/dotlin_semantic" }
 # dotlin_mir = { path = "crates/dotlin_mir" }
 # dotlin_codegen = { path = "crates/dotlin_codegen" }

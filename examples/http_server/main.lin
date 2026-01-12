@@ -1,0 +1,103 @@
+import dotlin.net.http.*
+import dotlin.concurrent.*
+import dotlin.json.*
+
+data class User(
+    val id: Int,
+    val name: String,
+    val email: String
+)
+
+// In-memory user storage
+val users = mutableMapOf<Int, User>()
+var nextId = 1
+
+suspend fun main() {
+    println("Starting HTTP server on port 8080...")
+    
+    val server = HttpServer(port = 8080) {
+        
+        // GET /
+        get("/") { request ->
+            Response.html("""
+                <!DOCTYPE html>
+                <html>
+                <head><title>Dotlin HTTP Server</title></head>
+                <body>
+                    <h1>Welcome to Dotlin HTTP Server</h1>
+                    <p>Available endpoints:</p>
+                    <ul>
+                        <li>GET /users - List all users</li>
+                        <li>GET /users/:id - Get user by ID</li>
+                        <li>POST /users - Create new user</li>
+                        <li>DELETE /users/:id - Delete user</li>
+                    </ul>
+                </body>
+                </html>
+            """.trimIndent())
+        }
+        
+        // GET /users - List all users
+        get("/users") { request ->
+            Response.json(users.values.toList())
+        }
+        
+        // GET /users/:id - Get specific user
+        get("/users/:id") { request ->
+            val id = request.params["id"]?.toIntOrNull()
+            if (id == null) {
+                return@get Response.badRequest("Invalid user ID")
+            }
+            
+            val user = users[id]
+            if (user == null) {
+                Response.notFound("User not found")
+            } else {
+                Response.json(user)
+            }
+        }
+        
+        // POST /users - Create new user
+        post("/users") { request ->
+            val body = request.body?.let { Json.parse<User>(it) }
+            if (body == null) {
+                return@post Response.badRequest("Invalid request body")
+            }
+            
+            val user = body.copy(id = nextId++)
+            users[user.id] = user
+            
+            Response.json(user, status = 201)
+        }
+        
+        // DELETE /users/:id - Delete user
+        delete("/users/:id") { request ->
+            val id = request.params["id"]?.toIntOrNull()
+            if (id == null) {
+                return@delete Response.badRequest("Invalid user ID")
+            }
+            
+            val removed = users.remove(id)
+            if (removed == null) {
+                Response.notFound("User not found")
+            } else {
+                Response.ok("User deleted successfully")
+            }
+        }
+        
+        // Middleware for logging
+        use { request, next ->
+            println("[${request.method}] ${request.path}")
+            val start = System.currentTimeMillis()
+            val response = next(request)
+            val duration = System.currentTimeMillis() - start
+            println("  -> ${response.status} (${duration}ms)")
+            response
+        }
+    }
+    
+    println("Server running at http://localhost:8080")
+    println("Press Ctrl+C to stop")
+    
+    server.start().await()
+}

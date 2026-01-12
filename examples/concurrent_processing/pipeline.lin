@@ -1,0 +1,185 @@
+import dotlin.concurrent.*
+import dotlin.collections.*
+import dotlin.io.*
+
+data class DataRecord(
+    val id: Int,
+    val value: String,
+    val timestamp: Long
+)
+
+data class ProcessedRecord(
+    val id: Int,
+    val processedValue: String,
+    val originalValue: String,
+    val processingTime: Long,
+    val workerId: Int
+)
+
+// Simulates expensive I/O operation
+suspend fun fetchData(count: Int): List<DataRecord> {
+    println("Fetching $count records...")
+    delay(500) // Simulate network delay
+    
+    return (1..count).map { id ->
+        DataRecord(
+            id = id,
+            value = "data_$id",
+            timestamp = System.currentTimeMillis()
+        )
+    }
+}
+
+// Simulates CPU-intensive processing
+suspend fun processRecord(record: DataRecord, workerId: Int): ProcessedRecord {
+    val startTime = System.currentTimeMillis()
+    
+    // Simulate heavy computation
+    delay(100)
+    val processed = record.value.uppercase().reversed()
+    
+    val endTime = System.currentTimeMillis()
+    
+    return ProcessedRecord(
+        id = record.id,
+        processedValue = processed,
+        originalValue = record.value,
+        processingTime = endTime - startTime,
+        workerId = workerId
+    )
+}
+
+// Pipeline with multiple worker coroutines
+suspend fun processingPipeline(
+    inputData: List<DataRecord>,
+    numWorkers: Int = 4
+): List<ProcessedRecord> = coroutineScope {
+    
+    // Create channel for distributing work
+    val inputChannel = Channel<DataRecord>(capacity = 100)
+    val outputChannel = Channel<ProcessedRecord>(capacity = 100)
+    
+    // Producer: Feed data into the pipeline
+    launch {
+        println("Producer: Starting to send ${inputData.size} records")
+        inputData.forEach { record ->
+            inputChannel.send(record)
+        }
+        inputChannel.close()
+        println("Producer: All records sent")
+    }
+    
+    // Workers: Process data concurrently
+    val workers = (1..numWorkers).map { workerId ->
+        launch {
+            println("Worker $workerId: Started")
+            var processed = 0
+            
+            for (record in inputChannel) {
+                val result = processRecord(record, workerId)
+                outputChannel.send(result)
+                processed++
+            }
+            
+            println("Worker $workerId: Processed $processed records")
+        }
+    }
+    
+    // Collector: Gather results
+    val results = async {
+        val collected = mutableListOf<ProcessedRecord>()
+        
+        launch {
+            // Wait for all workers to finish
+            workers.forEach { it.join() }
+            outputChannel.close()
+        }
+        
+        for (result in outputChannel) {
+            collected.add(result)
+            if (collected.size % 10 == 0) {
+                println("Collector: Received ${collected.size} results")
+            }
+        }
+        
+        collected
+    }
+    
+    results.await()
+}
+
+// Advanced: Fan-out/Fan-in pattern
+suspend fun fanOutFanIn(data: List<DataRecord>): Map<Int, List<ProcessedRecord>> = coroutineScope {
+    val results = data.map { record ->
+        async {
+            // Each record processed independently
+            val workerId = (record.id % 4) + 1
+            processRecord(record, workerId)
+        }
+    }
+    
+    // Wait for all and group by worker
+    results.awaitAll().groupBy { it.workerId }
+}
+
+// Rate-limited processing
+suspend fun rateLimitedProcessing(
+    data: List<DataRecord>,
+    ratePerSecond: Int
+): List<ProcessedRecord> {
+    val delayBetweenRequests = 1000L / ratePerSecond
+    val results = mutableListOf<ProcessedRecord>()
+    
+    data.forEach { record ->
+        val result = processRecord(record, 1)
+        results.add(result)
+        delay(delayBetweenRequests)
+    }
+    
+    return results
+}
+
+suspend fun main() {
+    println("=== Dotlin Concurrent Processing Pipeline ===\n")
+    
+    // Fetch initial data
+    val data = fetchData(50)
+    println("Fetched ${data.size} records\n")
+    
+    // Example 1: Multi-worker pipeline
+    println("--- Example 1: Multi-worker Pipeline ---")
+    val startTime1 = System.currentTimeMillis()
+    val results1 = processingPipeline(data, numWorkers = 4)
+    val duration1 = System.currentTimeMillis() - startTime1
+    
+    println("Processed ${results1.size} records in ${duration1}ms")
+    println("Average processing time: ${results1.map { it.processingTime }.average()}ms")
+    
+    // Worker distribution
+    val distribution = results1.groupBy { it.workerId }
+        .mapValues { it.value.size }
+    println("Worker distribution: $distribution\n")
+    
+    // Example 2: Fan-out/Fan-in
+    println("--- Example 2: Fan-out/Fan-in Pattern ---")
+    val startTime2 = System.currentTimeMillis()
+    val results2 = fanOutFanIn(data.take(20))
+    val duration2 = System.currentTimeMillis() - startTime2
+    
+    println("Processed ${results2.values.sumOf { it.size }} records in ${duration2}ms")
+    results2.forEach { (workerId, records) ->
+        println("Worker $workerId: ${records.size} records")
+    }
+    println()
+    
+    // Example 3: Rate-limited processing
+    println("--- Example 3: Rate-limited Processing ---")
+    val startTime3 = System.currentTimeMillis()
+    val results3 = rateLimitedProcessing(data.take(10), ratePerSecond = 5)
+    val duration3 = System.currentTimeMillis() - startTime3
+    
+    println("Processed ${results3.size} records in ${duration3}ms")
+    println("Expected duration: ~2000ms, Actual: ${duration3}ms\n")
+    
+    println("=== Processing Complete ===")
+}

@@ -1,0 +1,87 @@
+// Domain-Specific Language example
+
+@DslMarker
+annotation class HtmlDsl
+
+@HtmlDsl
+class HTML {
+    private val children = mutableListOf<Element>()
+    
+    fun head(block: Head.() -> Unit) {
+        children.add(Head().apply(block))
+    }
+    
+    fun body(block: Body.() -> Unit) {
+        children.add(Body().apply(block))
+    }
+    
+    override fun toString() = "<html>\n${children.joinToString("\n")}\n</html>"
+}
+
+@HtmlDsl
+abstract class Element(val name: String) {
+    protected val children = mutableListOf<Any>()
+    
+    operator fun String.unaryPlus() {
+        children.add(this)
+    }
+    
+    override fun toString(): String {
+        val content = children.joinToString("")
+        return "<$name>$content</$name>"
+    }
+}
+
+class Head : Element("head") {
+    fun title(block: Title.() -> Unit) {
+        children.add(Title().apply(block))
+    }
+}
+
+class Title : Element("title")
+
+class Body : Element("body") {
+    fun h1(block: H1.() -> Unit) {
+        children.add(H1().apply(block))
+    }
+    
+    fun p(block: P.() -> Unit) {
+        children.add(P().apply(block))
+    }
+    
+    fun ul(block: UL.() -> Unit) {
+        children.add(UL().apply(block))
+    }
+}
+
+class H1 : Element("h1")
+class P : Element("p")
+
+class UL : Element("ul") {
+    fun li(block: LI.() -> Unit) {
+        children.add(LI().apply(block))
+    }
+}
+
+class LI : Element("li")
+
+fun html(block: HTML.() -> Unit): HTML = HTML().apply(block)
+
+fun main() {
+    val page = html {
+        head {
+            title { +"Dotlin DSL Example" }
+        }
+        body {
+            h1 { +"Welcome to Dotlin" }
+            p { +"This demonstrates DSL capabilities" }
+            ul {
+                li { +"Native compilation" }
+                li { +"Type safety" }
+                li { +"Expressive syntax" }
+            }
+        }
+    }
+    
+    println(page)
+}

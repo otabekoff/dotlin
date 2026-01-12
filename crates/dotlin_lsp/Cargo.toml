@@ -1,21 +1,28 @@
 [package]
 name = "dotlin_lsp"
-version.workspace = true
-edition.workspace = true
-license.workspace = true
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
 
 [[bin]]
 name = "dotlin-lsp"
 path = "src/main.rs"
 
 [dependencies]
-dotlin_driver.workspace = true
-dotlin_parser.workspace = true
-dotlin_semantic.workspace = true
+# dotlin_driver.workspace = true
+# dotlin_parser.workspace = true
+# dotlin_semantic.workspace = true
 
-tower-lsp.workspace = true
-lsp-types.workspace = true
-tokio.workspace = true
-async-trait.workspace = true
-dashmap.workspace = true
-tracing.workspace = true
+# tower-lsp.workspace = true
+# lsp-types.workspace = true
+# tokio.workspace = true
+# async-trait.workspace = true
+# dashmap.workspace = true
+# tracing.workspace = true
+dotlin_parser = { path = "../dotlin_parser", optional = true }
+tower-lsp = "0.20"
+lsp-types = "0.95"
+tokio = { version = "1.38", features = ["full"] }
+async-trait = "0.1"
+dashmap = "6.0"
+tracing = "0.1"

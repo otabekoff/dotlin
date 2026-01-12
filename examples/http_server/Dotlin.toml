@@ -1,0 +1,9 @@
+[package]
+name = "http_server_example"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+dotlin_http = "1.0"
+dotlin_json = "2.0"
+dotlin_concurrent = "1.0"

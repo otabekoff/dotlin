@@ -1,0 +1,5 @@
+fun main() {
+    println("Enter:");
+        val s = readln()
+    println("You entered: " + s)
+}

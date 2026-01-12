@@ -1,6 +1,9 @@
 export type Expression =
     | { type: "NumberLiteral"; value: number }
+    | { type: "StringLiteral"; value: string }
     | { type: "Identifier"; name: string }
+    | { type: "Index"; object: Expression; index: Expression }
+    | { type: "Member"; object: Expression; property: string }
     | { type: "Unary"; op: string; expr: Expression }
     | { type: "Binary"; op: string; left: Expression; right: Expression }
     | { type: "Call"; callee: Expression; args: Expression[] };
@@ -18,6 +21,7 @@ export type Statement =
         type: "VariableDeclaration";
         kind: "val" | "var";
         name: string;
+        typeName?: string;
         init?: Expression;
     };
 
@@ -50,8 +54,52 @@ class Lexer {
         const out: Token[] = [];
         while (this.pos < this.input.length) {
             this.skipWhitespace();
+            // skip comments: // line comments and /* block comments */
+            if (this.peek() === "/" && this.input[this.pos + 1] === "/") {
+                // line comment
+                this.next();
+                this.next();
+                while (this.pos < this.input.length && this.peek() !== "\n") {
+                    this.next();
+                }
+                continue;
+            }
+            if (this.peek() === "/" && this.input[this.pos + 1] === "*") {
+                // block comment
+                this.next();
+                this.next();
+                while (this.pos < this.input.length) {
+                    if (
+                        this.peek() === "*" && this.input[this.pos + 1] === "/"
+                    ) {
+                        this.next();
+                        this.next();
+                        break;
+                    }
+                    this.next();
+                }
+                continue;
+            }
             const ch = this.peek();
             if (ch === "\0") break;
+            // string literals
+            if (ch === '"' || ch === "'") {
+                const quote = this.next();
+                let str = "";
+                while (this.pos < this.input.length) {
+                    const c = this.next();
+                    if (c === "\\") {
+                        // escape
+                        const nxt = this.next();
+                        str += nxt === undefined ? "\\" : "\\" + nxt;
+                        continue;
+                    }
+                    if (c === quote) break;
+                    str += c;
+                }
+                out.push({ type: "String", value: str });
+                continue;
+            }
             if (
                 this.isDigit(ch) ||
                 (ch === "." && this.isDigit(this.input[this.pos + 1] ?? ""))
@@ -71,9 +119,14 @@ class Lexer {
                 out.push({ type: "Identifier", value: id });
                 continue;
             }
-            // operators and punctuation
+            // operators and punctuation: accept common punctuation used in Dotlin
             const one = this.next();
-            if ("+-*/^(){};,=,".includes(one)) {
+            if (/[+\-*/^(){}\[\];,=:.<>!&|?:$]/.test(one)) {
+                out.push({ type: one });
+                continue;
+            }
+            // allow other single-char punctuation (fallback)
+            if (/\p{P}/u.test(one)) {
                 out.push({ type: one });
                 continue;
             }
@@ -121,6 +174,23 @@ export class Parser {
 
     parseStatement(): Statement {
         const tok = this.peek();
+        // handle package/import as top-level declarations (skip their content)
+        if (
+            tok.type === "Identifier" &&
+            (tok.value === "import" || tok.value === "package")
+        ) {
+            this.next();
+            // consume until semicolon or end of input
+            while (this.peek().type !== ";" && this.peek().type !== "EOF") {
+                this.next();
+            }
+            if (this.peek().type === ";") this.next();
+            // represent as an empty expression statement so callers won't error
+            return {
+                type: "ExpressionStatement",
+                expression: { type: "Identifier", name: tok.value ?? "" },
+            };
+        }
         if (tok.type === "Identifier" && tok.value === "fun") {
             // function declaration
             this.next(); // consume 'fun'
@@ -142,6 +212,29 @@ export class Parser {
                 }
                 params.push(p.value ?? "");
                 this.next();
+                // optional type annotation: skip tokens after ':' until comma or ')'
+                if (this.peek().type === ":") {
+                    this.next(); // consume ':'
+                    // skip a simple type or generic type tokens
+                    let depth = 0;
+                    while (
+                        this.peek().type !== ")" &&
+                        this.peek().type !== ","
+                    ) {
+                        const t = this.peek().type;
+                        if (t === "<") {
+                            depth++;
+                        } else if (t === ">") {
+                            if (depth > 0) depth--;
+                        }
+                        this.next();
+                        if (
+                            depth <= 0 &&
+                            (this.peek().type === "," ||
+                                this.peek().type === ")")
+                        ) break;
+                    }
+                }
                 if (this.peek().type === ",") this.next();
             }
             this.next(); // )
@@ -176,13 +269,37 @@ export class Parser {
             }
             const name = nameTok.value ?? "";
             this.next();
+            let typeName: string | undefined = undefined;
             let init: Expression | undefined = undefined;
+
+            // optional type annotation
+            if (this.peek().type === ":") {
+                this.next(); // consume ':'
+                // capture a simple identifier type name (e.g., Int, String)
+                if (this.peek().type === "Identifier") {
+                    typeName = this.peek().value ?? undefined;
+                    this.next();
+                } else {
+                    // if unexpected, surface a clear error for editor
+                    throw new Error("Expected type name after ':'");
+                }
+            }
+
+            // optional initializer
             if (this.peek().type === "=") {
                 this.next();
                 init = this.parseExpression(0);
             }
+
+            if (!init && !typeName) {
+                // Enforce explicit-type requirement for uninitialized declarations.
+                throw new Error(
+                    "Uninitialized variable requires explicit type",
+                );
+            }
+
             if (this.peek().type === ";") this.next();
-            return { type: "VariableDeclaration", kind, name, init };
+            return { type: "VariableDeclaration", kind, name, typeName, init };
         }
         // expression statement
         const expr = this.parseExpression(0);
@@ -220,6 +337,10 @@ export class Parser {
             this.next();
             return { type: "NumberLiteral", value: Number(tok.value) };
         }
+        if (tok.type === "String") {
+            this.next();
+            return { type: "StringLiteral", value: tok.value ?? "" };
+        }
         if (tok.type === "Identifier") {
             this.next();
             let node: Expression = {
@@ -236,6 +357,36 @@ export class Parser {
                 }
                 this.next(); // )
                 node = { type: "Call", callee: node, args };
+            }
+            // handle postfix: indexing `obj[index]` and member access `obj.prop`
+            while (true) {
+                if (this.peek().type === "[") {
+                    this.next(); // [
+                    const idx = this.parseExpression(0);
+                    if (this.peek().type !== "]") throw new Error("Expected ]");
+                    this.next();
+                    node = {
+                        type: "Index",
+                        object: node,
+                        index: idx,
+                    } as Expression;
+                    continue;
+                }
+                if (this.peek().type === ".") {
+                    this.next();
+                    const prop = this.peek();
+                    if (prop.type !== "Identifier") {
+                        throw new Error("Expected property name after .");
+                    }
+                    this.next();
+                    node = {
+                        type: "Member",
+                        object: node,
+                        property: prop.value ?? "",
+                    } as Expression;
+                    continue;
+                }
+                break;
             }
             return node;
         }
@@ -262,6 +413,8 @@ export function evaluate(
     switch (node.type) {
         case "NumberLiteral":
             return node.value;
+        case "StringLiteral":
+            throw new Error("String literal in numeric expression");
         case "Identifier":
             if (!(node.name in env)) {
                 throw new Error("Unknown identifier: " + node.name);
@@ -304,6 +457,16 @@ export function evaluate(
             const args = node.args.map((a) => evaluate(a, env));
             return fn(...args);
         }
+        case "Index": {
+            throw new Error(
+                "Indexing expressions are not supported in numeric evaluation",
+            );
+        }
+        case "Member": {
+            throw new Error(
+                "Member access is not supported in numeric evaluation",
+            );
+        }
     }
 }
 
@@ -320,4 +483,47 @@ export function parseExpression(input: string): Expression {
 export function parseProgram(input: string): Node {
     const p = new Parser(input);
     return p.parse();
+}
+
+// Infer simple type from later usage in the source text.
+// Returns one of: "Int", "String", "Boolean" or null if unknown.
+export function inferTypeFromUsage(text: string, name: string): string | null {
+    // Detect usage patterns to infer a simple type: Int, Double, String, Boolean, Array<...>
+    const strRe = new RegExp(
+        "\\b" + name + "\\b\\s*(?:=|\\+=)\\s*(\\\"([^\\\\\"]*)\\\"|'([^']*)')",
+        "g",
+    );
+    const boolRe = new RegExp(
+        "\\b" + name + "\\b\\s*(?:=|\\+=)\\s*\\b(true|false)\\b",
+        "g",
+    );
+    const floatRe = new RegExp(
+        "\\b" + name + "\\b\\s*(?:=|\\+=)\\s*([-+]?[0-9]*\\.[0-9]+)",
+        "g",
+    );
+    const intRe = new RegExp(
+        "\\b" + name + "\\b\\s*(?:=|\\+=)\\s*([-+]?[0-9]+)\\b",
+        "g",
+    );
+    const arrayRe = new RegExp(
+        "\\b" + name + "\\b\\s*(?:=|\\+=)\\s*\\[([^\\]]*)\\]",
+        "g",
+    );
+
+    let m: RegExpExecArray | null;
+    if ((m = strRe.exec(text)) !== null) return "String";
+    if ((m = boolRe.exec(text)) !== null) return "Boolean";
+    if ((m = arrayRe.exec(text)) !== null) {
+        const contents = m[1] || "";
+        const first = contents.split(/,/)[0]?.trim() ?? "";
+        if (/^\".*\"$/.test(first) || /^'.*'$/.test(first)) {
+            return "Array<String>";
+        }
+        if (/[-+]?[0-9]*\.[0-9]+/.test(first)) return "Array<Double>";
+        if (/[-+]?[0-9]+$/.test(first)) return "Array<Int>";
+        return "Array<Any>";
+    }
+    if ((m = floatRe.exec(text)) !== null) return "Double";
+    if ((m = intRe.exec(text)) !== null) return "Int";
+    return null;
 }

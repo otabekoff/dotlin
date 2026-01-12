@@ -10,6 +10,8 @@ path = "src/main.rs"
 
 [dependencies]
 clap.workspace = true
+# add parser dependency for execution
+dotlin_parser.workspace = true
 # clap = { workspace = true }
 # dotlin_lexer.workspace = true
 # dotlin_parser.workspace = true
@@ -30,4 +32,3 @@ clap.workspace = true
 # Profiles are now defined at the workspace root to avoid
 # the "profiles for the non root package will be ignored"
 # warning. See workspace `Cargo.toml` for active profiles.
-

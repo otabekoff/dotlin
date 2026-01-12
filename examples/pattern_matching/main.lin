@@ -1,0 +1,67 @@
+// Pattern matching and sealed classes
+
+sealed class Result<out T> {
+    data class Success<T>(val value: T) : Result<T>()
+    data class Error(val message: String) : Result<Nothing>()
+    object Loading : Result<Nothing>()
+}
+
+sealed class Json {
+    data class JString(val value: String) : Json()
+    data class JNumber(val value: Double) : Json()
+    data class JBool(val value: Boolean) : Json()
+    data class JArray(val values: List<Json>) : Json()
+    data class JObject(val fields: Map<String, Json>) : Json()
+    object JNull : Json()
+}
+
+fun processResult(result: Result<Int>) = when (result) {
+    is Result.Success -> println("Success: ${result.value}")
+    is Result.Error -> println("Error: ${result.message}")
+    Result.Loading -> println("Loading...")
+}
+
+fun prettyPrint(json: Json, indent: Int = 0): String {
+    val spaces = " ".repeat(indent)
+    return when (json) {
+        is Json.JString -> "\"${json.value}\""
+        is Json.JNumber -> json.value.toString()
+        is Json.JBool -> json.value.toString()
+        Json.JNull -> "null"
+        is Json.JArray -> {
+            val items = json.values.joinToString(",\n$spaces  ") {
+                prettyPrint(it, indent + 2)
+            }
+            "[\n$spaces  $items\n$spaces]"
+        }
+        is Json.JObject -> {
+            val fields = json.fields.entries.joinToString(",\n$spaces  ") {
+                "\"${it.key}\": ${prettyPrint(it.value, indent + 2)}"
+            }
+            "{\n$spaces  $fields\n$spaces}"
+        }
+    }
+}
+
+fun main() {
+    val results = listOf(
+        Result.Success(42),
+        Result.Error("Network timeout"),
+        Result.Loading
+    )
+    
+    results.forEach { processResult(it) }
+    
+    val json = Json.JObject(mapOf(
+        "name" to Json.JString("Dotlin"),
+        "version" to Json.JNumber(1.0),
+        "features" to Json.JArray(listOf(
+            Json.JString("AOT"),
+            Json.JString("Native"),
+            Json.JString("Fast")
+        ))
+    ))
+    
+    println("\nJSON:")
+    println(prettyPrint(json))
+}

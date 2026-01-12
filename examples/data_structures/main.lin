@@ -1,0 +1,28 @@
+// Custom data structures demonstration
+
+data class TreeNode<T>(
+    val value: T,
+    val left: TreeNode<T>? = null,
+    val right: TreeNode<T>? = null
+)
+
+fun <T : Comparable<T>> TreeNode<T>.insert(value: T): TreeNode<T> {
+    return when {
+        value < this.value -> copy(left = left?.insert(value) ?: TreeNode(value))
+        value > this.value -> copy(right = right?.insert(value) ?: TreeNode(value))
+        else -> this
+    }
+}
+
+fun <T> TreeNode<T>.inOrder(): List<T> {
+    return (left?.inOrder() ?: emptyList()) + value + (right?.inOrder() ?: emptyList())
+}
+
+fun main() {
+    var tree = TreeNode(50)
+    val values = listOf(30, 70, 20, 40, 60, 80)
+    
+    values.forEach { tree = tree.insert(it) }
+    
+    println("In-order traversal: ${tree.inOrder()}")
+}

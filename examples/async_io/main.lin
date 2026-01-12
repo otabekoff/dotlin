@@ -1,0 +1,36 @@
+import dotlin.io.*
+import dotlin.concurrent.*
+
+suspend fun readFileAsync(path: String): String {
+    return withContext(Dispatchers.IO) {
+        File(path).readText()
+    }
+}
+
+suspend fun writeFileAsync(path: String, content: String) {
+    withContext(Dispatchers.IO) {
+        File(path).writeText(content)
+    }
+}
+
+suspend fun processFiles(files: List<String>): Map<String, Int> {
+    return coroutineScope {
+        files.map { file ->
+            async {
+                val content = readFileAsync(file)
+                file to content.split("\\s+".toRegex()).size
+            }
+        }.awaitAll().toMap()
+    }
+}
+
+suspend fun main() {
+    println("Reading files asynchronously...")
+    
+    val files = listOf("file1.txt", "file2.txt", "file3.txt")
+    val wordCounts = processFiles(files)
+    
+    wordCounts.forEach { (file, count) ->
+        println("$file: $count words")
+    }
+}

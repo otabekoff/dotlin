@@ -1,16 +1,24 @@
 [package]
 name = "dotlin_parser"
-version.workspace = true
-edition.workspace = true
-license.workspace = true
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
-dotlin_lexer.workspace = true
-dotlin_span.workspace = true
-dotlin_diagnostics.workspace = true
+
+dotlin_lexer = { path = "../dotlin_lexer" }
+dotlin_span = { path = "../dotlin_span", optional = true }
+dotlin_diagnostics = { path = "../dotlin_diagnostics", optional = true }
+
+tower-lsp = "0.20"
+lsp-types = "0.95"
+tokio = { version = "1.38", features = ["full"] }
+async-trait = "0.1"
+dashmap = "6.0"
+tracing = "0.1"
 
 [build-dependencies]
-lalrpop.workspace = true
+lalrpop = "0.21"
 
 [dev-dependencies]
 insta = "1.39"

@@ -1,0 +1,138 @@
+import dotlin.ffi.*
+
+// C function declarations
+@CInterop
+@CLibrary("./native.c")
+external object NativeLib {
+    fun add_numbers(a: Int, b: Int): Int
+    fun reverse_string(input: CString): CString
+    fun process_array(arr: CIntArray, len: USize): Unit
+    fun free_string(str: CString): Unit
+    fun compute_pi_monte_carlo(iterations: Int): Double
+}
+
+// Define C struct in Dotlin
+@CRepr
+data class Point(
+    val x: Int,
+    val y: Int,
+    val distance: Double
+)
+
+@CInterop
+external fun create_point(x: Int, y: Int): Point
+
+// Callback example
+@CInterop
+external fun process_with_callback(
+    arr: CIntArray,
+    len: USize,
+    callback: (Int) -> Unit
+)
+
+fun main() {
+    println("=== Dotlin FFI Example ===\n")
+    
+    // Example 1: Simple function call
+    println("--- Example 1: Basic C Function ---")
+    val sum = NativeLib.add_numbers(42, 58)
+    println("42 + 58 = $sum")
+    println()
+    
+    // Example 2: String manipulation
+    println("--- Example 2: String Handling ---")
+    val original = "Hello, Dotlin!"
+    val cString = original.toCString()
+    val reversed = NativeLib.reverse_string(cString)
+    val reversedStr = reversed.toKotlinString()
+    
+    println("Original: $original")
+    println("Reversed: $reversedStr")
+    
+    // Clean up C-allocated memory
+    NativeLib.free_string(reversed)
+    println()
+    
+    // Example 3: Array processing
+    println("--- Example 3: Array Processing ---")
+    val numbers = intArrayOf(1, 2, 3, 4, 5)
+    println("Before: ${numbers.joinToString()}")
+    
+    numbers.useCArray { cArray, len ->
+        NativeLib.process_array(cArray, len)
+    }
+    
+    println("After:  ${numbers.joinToString()}")
+    println()
+    
+    // Example 4: Struct passing
+    println("--- Example 4: Struct Handling ---")
+    val point = create_point(3, 4)
+    println("Point: (${point.x}, ${point.y})")
+    println("Distance from origin: ${point.distance}")
+    println()
+    
+    // Example 5: Callbacks
+    println("--- Example 5: Callback Functions ---")
+    val data = intArrayOf(10, 20, 30, 40, 50)
+    println("Processing array with callback:")
+    
+    data.useCArray { cArray, len ->
+        process_with_callback(cArray, len) { value ->
+            println("  Processing: $value")
+        }
+    }
+    println()
+    
+    // Example 6: CPU-intensive computation
+    println("--- Example 6: Performance Test ---")
+    val iterations = 10_000_000
+    println("Computing Pi using Monte Carlo ($iterations iterations)...")
+    
+    val startTime = System.currentTimeMillis()
+    val piEstimate = NativeLib.compute_pi_monte_carlo(iterations)
+    val duration = System.currentTimeMillis() - startTime
+    
+    println("Estimated Pi: $piEstimate")
+    println("Actual Pi:    ${Math.PI}")
+    println("Error:        ${Math.abs(piEstimate - Math.PI)}")
+    println("Time taken:   ${duration}ms")
+    println()
+    
+    // Example 7: Unsafe operations
+    println("--- Example 7: Unsafe Memory Access ---")
+    unsafe {
+        val ptr = malloc(100) // Allocate 100 bytes
+        val intPtr = ptr.cast<Int>()
+        
+        // Write values
+        for (i in 0 until 10) {
+            intPtr[i] = i * i
+        }
+        
+        // Read values
+        print("Squares: ")
+        for (i in 0 until 10) {
+            print("${intPtr[i]} ")
+        }
+        println()
+        
+        free(ptr)
+    }
+    
+    println("\n=== FFI Examples Complete ===")
+}
+
+// Extension functions for FFI convenience
+fun String.toCString(): CString = CString.fromKotlin(this)
+
+fun CString.toKotlinString(): String = this.toKotlin()
+
+fun IntArray.useCArray(block: (CIntArray, USize) -> Unit) {
+    val cArray = this.toCArray()
+    try {
+        block(cArray, this.size.toUSize())
+    } finally {
+        cArray.free()
+    }
+}

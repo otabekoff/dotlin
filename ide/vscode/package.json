@@ -37,9 +37,11 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "all": "npm run compile && npm run package && code --install-extension /home/otabek/Projects/langs/dotlin/ide/vscode/dotlin-language-0.1.0.vsix",
     "build:icon": "inkscape \"$PWD/images/icon.svg\" --export-type=png --export-filename=\"$PWD/images/icon.png\" -w 128 -h 128 || rsvg-convert -w 128 -h 128 -o \"$PWD/images/icon.png\" \"$PWD/images/icon.svg\" || echo \"Error: Install Inkscape or librsvg (rsvg-convert) to build the icon\""
   },
   "dependencies": {
+    "shiki": "^3.21.0",
     "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
@@ -79,9 +81,13 @@
           "text.html.markdown"
         ],
         "embeddedLanguages": {
-          "meta.embedded.block.dotlin": "dotlin"
+          "source.dotlin": "kotlin"
         }
       }
+    ],
+    "markdown.markdownItPlugins": true,
+    "markdown.previewScripts": [
+      "./out/preview/highlight-dotlin.js"
     ],
     "snippets": [
       {
@@ -108,7 +114,27 @@
       {
         "command": "dotlin.evaluate",
         "title": "Dotlin: Evaluate Selection or Line"
+      },
+      {
+        "command": "dotlin.restart",
+        "title": "Dotlin: Restart / Refresh Diagnostics"
+      }
+    ],
+    "iconThemes": [
+      {
+        "id": "dotlin-icons",
+        "label": "Dotlin Icons",
+        "path": "./icons/dotlin-icon-theme.json"
       }
     ]
+  },
+  "configurationDefaults": {
+    "material-icon-theme.files.associations": {
+      "*.lin": "file"
+    },
+    "material-icon-theme.folders.associations": {
+      "dotlin": "folder",
+      ".dotlin": "folder"
+    }
   }
 }

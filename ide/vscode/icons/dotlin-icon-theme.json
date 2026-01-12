@@ -1,0 +1,29 @@
+{
+  "iconDefinitions": {
+    "_file_dotlin": {
+      "iconPath": "./images/file-icon.png"
+    },
+    "_folder_dotlin": {
+      "iconPath": "./images/folder-icon.png"
+    },
+    "_folder_dotlin_open": {
+      "iconPath": "./images/folder-icon-open.png"
+    }
+  },
+  "fileExtensions": {
+    "lin": "_file_dotlin"
+  },
+  "languageIds": {
+    "dotlin": "_file_dotlin"
+  },
+  "folderNames": {
+    "dotlin": "_folder_dotlin",
+    ".dotlin": "_folder_dotlin"
+  },
+  "folderNamesExpanded": {
+    "dotlin": "_folder_dotlin_open",
+    ".dotlin": "_folder_dotlin_open"
+  },
+  "title": "Dotlin Icons",
+  "version": 1
+}

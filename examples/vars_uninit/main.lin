@@ -1,0 +1,5 @@
+fun main() {
+    val c: Int
+    c = 3
+    println(c)
+}

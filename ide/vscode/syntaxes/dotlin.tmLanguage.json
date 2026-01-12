@@ -33,6 +33,10 @@
           "include": "#hard-keywords"
         },
         {
+          "match": "\\b[\\w\\.\\*]+\\b",
+          "name": "entity.name.package.dotlin"
+        },
+        {
           "match": "\\*",
           "name": "variable.language.wildcard.dotlin"
         }

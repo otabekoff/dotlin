@@ -2,6 +2,12 @@
 
 This folder contains a minimal VS Code language extension for Dotlin (.lin) files.
 
+```lin
+fun main(args: Array<String>) {
+    println("hi")
+}
+```
+
 ## What is included
 
 - `syntaxes/dotlin.tmLanguage.json` — TextMate grammar (adapted from Kotlin)

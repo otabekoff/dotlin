@@ -1,0 +1,5 @@
+// Simple Hello World program
+fun main() {
+    println("Hello, Dotlin!")
+    println("Welcome to native Kotlin alternative")
+}
