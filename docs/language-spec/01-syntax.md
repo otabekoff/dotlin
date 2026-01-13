@@ -464,6 +464,8 @@ if (10 in 1..9+1) println("fits")
 for (x in 1..5) print(x)
 for (x in 1..10 step 2) print(x)
 for (x in 9 downTo 0 step 3) print(x)
+
+Note: Dotlin supports `..`, `downTo`, and `step`. `step` accepts negative strides (reverse-stepping) and `until` (exclusive end) is also supported: `1 until 5` yields `1,2,3,4`.
 ```
 
 ## Collections and higher-order ops

@@ -18,7 +18,13 @@ fn test_function_return_value() {
         }),
         span(),
     )];
-    i.register_fn("add".into(), vec!["a".into(), "b".into()], body, None);
+    i.register_fn(
+        "add".into(),
+        vec!["a".into(), "b".into()],
+        body,
+        None,
+        Some("Int".into()),
+    );
 
     // call add(2,3)
     let call = Expr::Call {
@@ -56,7 +62,7 @@ fn test_return_early() {
             span(),
         ),
     ];
-    i.register_fn("foo".into(), vec![], body, None);
+    i.register_fn("foo".into(), vec![], body, None, Some("Int".into()));
     let call = Expr::Call {
         callee: Box::new(Expr::Ident("foo".into(), span())),
         args: vec![],

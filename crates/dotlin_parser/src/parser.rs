@@ -27,6 +27,12 @@ impl<'a> Parser<'a> {
         // primary expressions: literals, identifiers, calls, parenthesis, indexing
         if let Some(t) = self.peek() {
             match t {
+                Token::Symbol(s, _sspan) if s == "{" => {
+                    // possible lambda expression: { x, y -> expr } or { expr } (implicit `it`)
+                    if let Some(lambda) = self.parse_lambda() {
+                        return Some(lambda);
+                    }
+                }
                 Token::Symbol(s, _) if s == "(" => {
                     // grouping
                     self.next();
@@ -38,19 +44,292 @@ impl<'a> Parser<'a> {
                     }
                     return expr;
                 }
-                Token::Str(s, span) => {
-                    self.next();
-                    return Some(Expr::LitStr(s.clone(), span.clone()));
-                }
-                Token::Number(n, span) => {
-                    self.next();
-                    return Some(Expr::LitNumber(n.clone(), span.clone()));
-                }
                 Token::Ident(name, span) | Token::Keyword(name, span) => {
                     // possible call if followed by (
                     let name_clone = name.clone();
                     let span_clone = span.clone();
                     self.next();
+                    // special-case 'when' expression
+                    if name_clone == "when" {
+                        // optional '(' scrutinee ')' or no scrutinee
+                        let mut scrut: Option<Expr> = None;
+                        if let Some(Token::Symbol(p, _)) = self.peek() {
+                            if p == "(" {
+                                self.next();
+                                scrut = self.parse_expr(0);
+                                if let Some(Token::Symbol(p2, _)) = self.peek() {
+                                    if p2 == ")" {
+                                        self.next();
+                                    }
+                                }
+                            }
+                        }
+                        // expect '{' for arms
+                        let mut arms: Vec<(crate::ast::Pattern, Expr)> = Vec::new();
+                        if let Some(Token::Symbol(b, _)) = self.peek() {
+                            if b == "{" {
+                                self.next();
+                                loop {
+                                    match self.peek() {
+                                        Some(Token::Symbol(s2, _)) if s2 == "}" => {
+                                            self.next();
+                                            break;
+                                        }
+                                        Some(_) => {
+                                            // parse pattern (simple literals, is/not is, else)
+                                            let pat = match self.peek() {
+                                                Some(Token::Number(n, spann)) => {
+                                                    // possible range literal pattern like 1..5
+                                                    let lit = n.clone();
+                                                    self.next();
+                                                    let pat = if let Some(Token::Symbol(dots, _)) =
+                                                        self.peek()
+                                                    {
+                                                        if dots == ".." {
+                                                            // consume '..'
+                                                            self.next();
+                                                            if let Some(Token::Number(n2, _span2)) =
+                                                                self.next()
+                                                            {
+                                                                crate::ast::Pattern::Range(
+                                                                    lit.clone(),
+                                                                    n2.clone(),
+                                                                    spann.clone(),
+                                                                )
+                                                            } else {
+                                                                // fallback to plain lit number pattern
+                                                                crate::ast::Pattern::LitNumber(
+                                                                    lit.clone(),
+                                                                    spann.clone(),
+                                                                )
+                                                            }
+                                                        } else {
+                                                            crate::ast::Pattern::LitNumber(
+                                                                lit.clone(),
+                                                                spann.clone(),
+                                                            )
+                                                        }
+                                                    } else {
+                                                        crate::ast::Pattern::LitNumber(
+                                                            lit.clone(),
+                                                            spann.clone(),
+                                                        )
+                                                    };
+                                                    pat
+                                                }
+                                                Some(Token::Str(s, spans)) => {
+                                                    let lit = s.clone();
+                                                    self.next();
+                                                    crate::ast::Pattern::LitStr(lit, spans.clone())
+                                                }
+                                                Some(Token::Symbol(sym, syspan)) if sym == "[" => {
+                                                    // array pattern like [1, "a", true]
+                                                    self.next();
+                                                    let mut elems: Vec<crate::ast::Pattern> =
+                                                        Vec::new();
+                                                    loop {
+                                                        if let Some(Token::Symbol(c, _)) =
+                                                            self.peek()
+                                                        {
+                                                            if c == "]" {
+                                                                self.next();
+                                                                break;
+                                                            }
+                                                        }
+                                                        // try parse an inner expression and convert to pattern
+                                                        if let Some(e) = self.parse_expr(0) {
+                                                            match e {
+                                                                Expr::LitNumber(nv, spv) => elems
+                                                                    .push(
+                                                                    crate::ast::Pattern::LitNumber(
+                                                                        nv, spv,
+                                                                    ),
+                                                                ),
+                                                                Expr::LitStr(sv, spv) => elems
+                                                                    .push(
+                                                                        crate::ast::Pattern::LitStr(
+                                                                            sv, spv,
+                                                                        ),
+                                                                    ),
+                                                                Expr::LitBool(bv, sb) => elems
+                                                                    .push(
+                                                                    crate::ast::Pattern::LitBool(
+                                                                        bv, sb,
+                                                                    ),
+                                                                ),
+                                                                Expr::Ident(namev, spv) => elems
+                                                                    .push(
+                                                                        crate::ast::Pattern::Bind(
+                                                                            namev, spv,
+                                                                        ),
+                                                                    ),
+                                                                _ => elems.push(
+                                                                    crate::ast::Pattern::Else(
+                                                                        syspan.clone(),
+                                                                    ),
+                                                                ),
+                                                            }
+                                                        } else {
+                                                            // consume and break to avoid infinite loop
+                                                            self.next();
+                                                            break;
+                                                        }
+                                                        if let Some(Token::Symbol(com, _)) =
+                                                            self.peek()
+                                                        {
+                                                            if com == "," {
+                                                                self.next();
+                                                                continue;
+                                                            }
+                                                        }
+                                                    }
+                                                    crate::ast::Pattern::Array(
+                                                        elems,
+                                                        syspan.clone(),
+                                                    )
+                                                }
+                                                Some(Token::Keyword(kp, kpspan)) if kp == "is" => {
+                                                    self.next();
+                                                    if let Some(Token::Ident(tn, tsp)) = self.next()
+                                                    {
+                                                        // check for optional binding: is Type(name)
+                                                        if let Some(Token::Symbol(lp, _)) =
+                                                            self.peek()
+                                                        {
+                                                            if lp == "(" {
+                                                                // consume '('
+                                                                self.next();
+                                                                if let Some(Token::Ident(
+                                                                    bn,
+                                                                    _bnspan,
+                                                                )) = self.next()
+                                                                {
+                                                                    // expect ')'
+                                                                    if let Some(Token::Symbol(
+                                                                        rp,
+                                                                        _,
+                                                                    )) = self.peek()
+                                                                    {
+                                                                        if rp == ")" {
+                                                                            self.next();
+                                                                        }
+                                                                    }
+                                                                    crate::ast::Pattern::IsBind(
+                                                                        tn.clone(),
+                                                                        bn.clone(),
+                                                                        tsp.clone(),
+                                                                    )
+                                                                } else {
+                                                                    crate::ast::Pattern::IsType(
+                                                                        tn.clone(),
+                                                                        tsp.clone(),
+                                                                    )
+                                                                }
+                                                            } else {
+                                                                crate::ast::Pattern::IsType(
+                                                                    tn.clone(),
+                                                                    tsp.clone(),
+                                                                )
+                                                            }
+                                                        } else {
+                                                            crate::ast::Pattern::IsType(
+                                                                tn.clone(),
+                                                                tsp.clone(),
+                                                            )
+                                                        }
+                                                    } else {
+                                                        crate::ast::Pattern::Else(kpspan.clone())
+                                                    }
+                                                }
+                                                Some(Token::Symbol(sy, syspan)) if sy == "!" => {
+                                                    self.next();
+                                                    if let Some(Token::Keyword(iskw, _isps)) =
+                                                        self.next()
+                                                    {
+                                                        if iskw == "is" {
+                                                            if let Some(Token::Ident(tn2, tsp2)) =
+                                                                self.next()
+                                                            {
+                                                                crate::ast::Pattern::NotIsType(
+                                                                    tn2.clone(),
+                                                                    tsp2.clone(),
+                                                                )
+                                                            } else {
+                                                                crate::ast::Pattern::Else(
+                                                                    syspan.clone(),
+                                                                )
+                                                            }
+                                                        } else {
+                                                            crate::ast::Pattern::Else(
+                                                                syspan.clone(),
+                                                            )
+                                                        }
+                                                    } else {
+                                                        crate::ast::Pattern::Else(syspan.clone())
+                                                    }
+                                                }
+                                                Some(Token::Keyword(kp2, kp2span))
+                                                    if kp2 == "else" =>
+                                                {
+                                                    let sp = kp2span.clone();
+                                                    self.next();
+                                                    crate::ast::Pattern::Else(sp)
+                                                }
+                                                Some(Token::Keyword(kpin, kpinspan))
+                                                    if kpin == "in" =>
+                                                {
+                                                    // parse an expression after 'in' and store it
+                                                    self.next();
+                                                    if let Some(expr) = self.parse_expr(0) {
+                                                        crate::ast::Pattern::InExpr(
+                                                            expr,
+                                                            kpinspan.clone(),
+                                                        )
+                                                    } else {
+                                                        crate::ast::Pattern::Else(kpinspan.clone())
+                                                    }
+                                                }
+                                                Some(Token::Ident(idn, idspan)) => {
+                                                    // identifier in pattern -> binding
+                                                    let name = idn.clone();
+                                                    self.next();
+                                                    crate::ast::Pattern::Bind(name, idspan.clone())
+                                                }
+                                                _ => {
+                                                    self.next();
+                                                    crate::ast::Pattern::Else(span_clone.clone())
+                                                }
+                                            };
+                                            // optional '->' or '=>' or ':'? handle '->'
+                                            if let Some(Token::Symbol(arrow, _)) = self.peek() {
+                                                if arrow == "->" {
+                                                    self.next();
+                                                }
+                                            }
+                                            // parse arm expression
+                                            if let Some(aexpr) = self.parse_expr(0) {
+                                                arms.push((pat, aexpr));
+                                            }
+                                            // optional separator tokens
+                                            if let Some(Token::Symbol(sc, _)) = self.peek() {
+                                                if sc == ";" {
+                                                    self.next();
+                                                }
+                                            }
+                                        }
+                                        None => break,
+                                    }
+                                }
+                            }
+                        }
+                        // span for when
+                        let span = span_clone.clone();
+                        return Some(Expr::When {
+                            scrutinee: scrut.map(Box::new),
+                            arms,
+                            span,
+                        });
+                    }
                     // handle boolean keywords as literals
                     if name_clone == "true" {
                         return Some(Expr::LitBool(true, span_clone));
@@ -91,6 +370,21 @@ impl<'a> Parser<'a> {
                                 args,
                                 span: span.clone(),
                             };
+                            // allow a trailing lambda after a call: e.g., foo(...) { x -> ... }
+                            if let Some(Token::Symbol(bc, _)) = self.peek() {
+                                if bc == "{" {
+                                    if let Some(lambda_expr) = self.parse_lambda() {
+                                        // append as last arg
+                                        if let Expr::Call {
+                                            args: ref mut aargs,
+                                            ..
+                                        } = expr
+                                        {
+                                            aargs.push(lambda_expr);
+                                        }
+                                    }
+                                }
+                            }
                             // handle indexing after call: e.g., foo(...)[0]
                             while let Some(Token::Symbol(sbr, _)) = self.peek() {
                                 if sbr == "[" {
@@ -274,6 +568,8 @@ impl<'a> Parser<'a> {
                             Expr::Unary { span, .. } => span.clone(),
                             Expr::Member { span, .. } => span.clone(),
                             Expr::LitBool(_, s) => s.clone(),
+                            Expr::When { span, .. } => span.clone(),
+                            Expr::Lambda { span, .. } => span.clone(),
                         };
                         return Some(Expr::Unary {
                             op: "!".into(),
@@ -294,6 +590,10 @@ impl<'a> Parser<'a> {
                 "*" | "/" => Some(40),
                 "+" | "-" => Some(30),
                 "==" | "!=" | "<" | ">" | "<=" | ">=" => Some(20),
+                "in" => Some(20),
+                ".." => Some(35),
+                "downTo" => Some(35),
+                "step" => Some(15),
                 "=" | "+=" | "-=" | "*=" | "/=" => Some(10),
                 _ => None,
             }
@@ -301,8 +601,11 @@ impl<'a> Parser<'a> {
 
         let mut lhs = self.parse_simple_expr()?;
         loop {
+            // operator token may be a Symbol like "+" or a Keyword/Ident operator like "in" or "step"
             let op = match self.peek() {
                 Some(Token::Symbol(op, _)) => op.clone(),
+                Some(Token::Keyword(k, _)) => k.clone(),
+                Some(Token::Ident(k, _)) => k.clone(),
                 _ => break,
             };
             let prec = match op_prec(op.as_str()) {
@@ -327,7 +630,10 @@ impl<'a> Parser<'a> {
                 Expr::Binary { span, .. } => span.clone(),
                 Expr::Unary { span, .. } => span.clone(),
                 Expr::Member { span, .. } => span.clone(),
+                Expr::When { span, .. } => span.clone(),
+                Expr::Lambda { span, .. } => span.clone(),
             };
+
             lhs = Expr::Binary {
                 left: Box::new(lhs),
                 op,
@@ -336,6 +642,81 @@ impl<'a> Parser<'a> {
             };
         }
         Some(lhs)
+    }
+
+    // parse a lambda expression starting at a '{'. consumes the closing '}'.
+    fn parse_lambda(&mut self) -> Option<Expr> {
+        // expect '{'
+        if let Some(Token::Symbol(b, _bspan)) = self.peek() {
+            if b != "{" {
+                return None;
+            }
+        } else {
+            return None;
+        }
+        // consume '{'
+        let span_start = if let Some(Token::Symbol(_, s)) = self.next() {
+            s.clone()
+        } else {
+            return None;
+        };
+
+        // attempt to parse parameters before '->'
+        let mut params: Vec<String> = Vec::new();
+        let mut saw_arrow = false;
+        // peek ahead to see if we have an identifier list followed by '->'
+        loop {
+            match self.peek() {
+                Some(Token::Symbol(sym, _)) if sym == "->" => {
+                    self.next();
+                    saw_arrow = true;
+                    break;
+                }
+                Some(Token::Ident(_id, _)) => {
+                    if let Some(Token::Ident(idv, _)) = self.next() {
+                        params.push(idv.clone());
+                    }
+                    // optional comma
+                    if let Some(Token::Symbol(com, _)) = self.peek() {
+                        if com == "," {
+                            self.next();
+                            continue;
+                        }
+                    }
+                    // continue to look for '->'
+                    continue;
+                }
+                _ => break,
+            }
+        }
+
+        // parse body expression
+        let body = if saw_arrow {
+            // parse expression until '}'
+            let expr = self.parse_expr(0)?;
+            expr
+        } else {
+            // no explicit params/arrow: treat content as single expression, implicit `it`
+            let expr = self.parse_expr(0)?;
+            // if params empty, set implicit 'it'
+            if params.is_empty() {
+                params.push("it".into());
+            }
+            expr
+        };
+
+        // consume optional '}'
+        if let Some(Token::Symbol(c, _)) = self.peek() {
+            if c == "}" {
+                self.next();
+            }
+        }
+
+        Some(Expr::Lambda {
+            params,
+            body: Box::new(body),
+            span: span_start,
+        })
     }
 
     pub fn parse_top_level(&mut self) -> Vec<Node> {
@@ -559,6 +940,341 @@ impl<'a> Parser<'a> {
                                             }
                                             body.push(Stmt::Return(ret_expr, span3.clone()));
                                         }
+                                        Some(Token::Keyword(kw, kwspan))
+                                            if kw == "for" || kw == "while" =>
+                                        {
+                                            // handle for and while
+                                            if let Some(Token::Keyword(kword, kspan)) = self.next()
+                                            {
+                                                if kword == "while" {
+                                                    // optional '('
+                                                    if let Some(Token::Symbol(p, _)) = self.peek() {
+                                                        if p == "(" {
+                                                            self.next();
+                                                        }
+                                                    }
+                                                    let cond = self.parse_expr(0).unwrap_or(
+                                                        Expr::LitBool(false, kspan.clone()),
+                                                    );
+                                                    if let Some(Token::Symbol(p2, _)) = self.peek()
+                                                    {
+                                                        if p2 == ")" {
+                                                            self.next();
+                                                        }
+                                                    }
+                                                    // parse body
+                                                    let mut body_stmts = Vec::new();
+                                                    if let Some(Token::Symbol(b, _)) = self.peek() {
+                                                        if b == "{" {
+                                                            self.next();
+                                                            loop {
+                                                                match self.peek() {
+                                                                    Some(Token::Symbol(s2, _))
+                                                                        if s2 == "}" =>
+                                                                    {
+                                                                        self.next();
+                                                                        break;
+                                                                    }
+                                                                    Some(_) => {
+                                                                        if let Some(expr) =
+                                                                            self.parse_expr(0)
+                                                                        {
+                                                                            if let Some(
+                                                                                Token::Symbol(
+                                                                                    sc,
+                                                                                    _,
+                                                                                ),
+                                                                            ) = self.peek()
+                                                                            {
+                                                                                if sc == ";" {
+                                                                                    self.next();
+                                                                                }
+                                                                            }
+                                                                            let span = match &expr {
+                                                                                Expr::LitStr(
+                                                                                    _,
+                                                                                    s,
+                                                                                ) => s.clone(),
+                                                                                Expr::LitNumber(
+                                                                                    _,
+                                                                                    s,
+                                                                                ) => s.clone(),
+                                                                                Expr::LitBool(
+                                                                                    _,
+                                                                                    s,
+                                                                                ) => s.clone(),
+                                                                                Expr::Ident(
+                                                                                    _,
+                                                                                    s,
+                                                                                ) => s.clone(),
+                                                                                Expr::Call {
+                                                                                    span,
+                                                                                    ..
+                                                                                } => span.clone(),
+                                                                                Expr::Index {
+                                                                                    span,
+                                                                                    ..
+                                                                                } => span.clone(),
+                                                                                Expr::Binary {
+                                                                                    span,
+                                                                                    ..
+                                                                                } => span.clone(),
+                                                                                Expr::Unary {
+                                                                                    span,
+                                                                                    ..
+                                                                                } => span.clone(),
+                                                                                Expr::Member {
+                                                                                    span,
+                                                                                    ..
+                                                                                } => span.clone(),
+                                                                                Expr::When {
+                                                                                    span,
+                                                                                    ..
+                                                                                } => span.clone(),
+                                                                                Expr::Lambda {
+                                                                                    span,
+                                                                                    ..
+                                                                                } => span.clone(),
+                                                                            };
+                                                                            body_stmts.push(
+                                                                                Stmt::ExprStmt(
+                                                                                    expr, span,
+                                                                                ),
+                                                                            );
+                                                                        } else {
+                                                                            self.next();
+                                                                        }
+                                                                    }
+                                                                    None => break,
+                                                                }
+                                                            }
+                                                        } else {
+                                                            if let Some(expr) = self.parse_expr(0) {
+                                                                if let Some(Token::Symbol(sc, _)) =
+                                                                    self.peek()
+                                                                {
+                                                                    if sc == ";" {
+                                                                        self.next();
+                                                                    }
+                                                                }
+                                                                let span = match &expr {
+                                                                    Expr::LitStr(_, s) => s.clone(),
+                                                                    Expr::LitNumber(_, s) => {
+                                                                        s.clone()
+                                                                    }
+                                                                    Expr::LitBool(_, s) => {
+                                                                        s.clone()
+                                                                    }
+                                                                    Expr::Ident(_, s) => s.clone(),
+                                                                    Expr::Call { span, .. } => {
+                                                                        span.clone()
+                                                                    }
+                                                                    Expr::Index {
+                                                                        span, ..
+                                                                    } => span.clone(),
+                                                                    Expr::Binary {
+                                                                        span, ..
+                                                                    } => span.clone(),
+                                                                    Expr::Unary {
+                                                                        span, ..
+                                                                    } => span.clone(),
+                                                                    Expr::Member {
+                                                                        span, ..
+                                                                    } => span.clone(),
+                                                                    Expr::When { span, .. } => {
+                                                                        span.clone()
+                                                                    }
+                                                                    Expr::Lambda {
+                                                                        span, ..
+                                                                    } => span.clone(),
+                                                                };
+                                                                body_stmts.push(Stmt::ExprStmt(
+                                                                    expr, span,
+                                                                ));
+                                                            }
+                                                        }
+                                                    }
+                                                    body.push(Stmt::While {
+                                                        cond,
+                                                        body: body_stmts,
+                                                        span: kspan.clone(),
+                                                    });
+                                                } else if kword == "for" {
+                                                    // optional '('
+                                                    if let Some(Token::Symbol(p, _)) = self.peek() {
+                                                        if p == "(" {
+                                                            self.next();
+                                                        }
+                                                    }
+                                                    // expect identifier
+                                                    let mut var_name = "<anon>".to_string();
+                                                    if let Some(Token::Ident(nm, _)) = self.next() {
+                                                        var_name = nm.clone();
+                                                    }
+                                                    // expect 'in'
+                                                    if let Some(Token::Keyword(ink, _)) =
+                                                        self.peek()
+                                                    {
+                                                        if ink == "in" {
+                                                            self.next();
+                                                        }
+                                                    } else if let Some(Token::Ident(ink2, _)) =
+                                                        self.peek()
+                                                    {
+                                                        if ink2 == "in" {
+                                                            self.next();
+                                                        }
+                                                    }
+                                                    let iterable = self.parse_expr(0).unwrap_or(
+                                                        Expr::LitStr(String::new(), kspan.clone()),
+                                                    );
+                                                    if let Some(Token::Symbol(p2, _)) = self.peek()
+                                                    {
+                                                        if p2 == ")" {
+                                                            self.next();
+                                                        }
+                                                    }
+                                                    // parse body
+                                                    let mut body_stmts = Vec::new();
+                                                    if let Some(Token::Symbol(b, _)) = self.peek() {
+                                                        if b == "{" {
+                                                            self.next();
+                                                            loop {
+                                                                match self.peek() {
+                                                                    Some(Token::Symbol(s2, _))
+                                                                        if s2 == "}" =>
+                                                                    {
+                                                                        self.next();
+                                                                        break;
+                                                                    }
+                                                                    Some(_) => {
+                                                                        if let Some(expr) =
+                                                                            self.parse_expr(0)
+                                                                        {
+                                                                            if let Some(
+                                                                                Token::Symbol(
+                                                                                    sc,
+                                                                                    _,
+                                                                                ),
+                                                                            ) = self.peek()
+                                                                            {
+                                                                                if sc == ";" {
+                                                                                    self.next();
+                                                                                }
+                                                                            }
+                                                                            let span = match &expr {
+                                                                                Expr::LitStr(
+                                                                                    _,
+                                                                                    s,
+                                                                                ) => s.clone(),
+                                                                                Expr::LitNumber(
+                                                                                    _,
+                                                                                    s,
+                                                                                ) => s.clone(),
+                                                                                Expr::LitBool(
+                                                                                    _,
+                                                                                    s,
+                                                                                ) => s.clone(),
+                                                                                Expr::Ident(
+                                                                                    _,
+                                                                                    s,
+                                                                                ) => s.clone(),
+                                                                                Expr::Call {
+                                                                                    span,
+                                                                                    ..
+                                                                                } => span.clone(),
+                                                                                Expr::Index {
+                                                                                    span,
+                                                                                    ..
+                                                                                } => span.clone(),
+                                                                                Expr::Binary {
+                                                                                    span,
+                                                                                    ..
+                                                                                } => span.clone(),
+                                                                                Expr::Unary {
+                                                                                    span,
+                                                                                    ..
+                                                                                } => span.clone(),
+                                                                                Expr::Member {
+                                                                                    span,
+                                                                                    ..
+                                                                                } => span.clone(),
+                                                                                Expr::When {
+                                                                                    span,
+                                                                                    ..
+                                                                                } => span.clone(),
+                                                                                Expr::Lambda {
+                                                                                    span,
+                                                                                    ..
+                                                                                } => span.clone(),
+                                                                            };
+                                                                            body_stmts.push(
+                                                                                Stmt::ExprStmt(
+                                                                                    expr, span,
+                                                                                ),
+                                                                            );
+                                                                        } else {
+                                                                            self.next();
+                                                                        }
+                                                                    }
+                                                                    None => break,
+                                                                }
+                                                            }
+                                                        } else {
+                                                            if let Some(expr) = self.parse_expr(0) {
+                                                                if let Some(Token::Symbol(sc, _)) =
+                                                                    self.peek()
+                                                                {
+                                                                    if sc == ";" {
+                                                                        self.next();
+                                                                    }
+                                                                }
+                                                                let span = match &expr {
+                                                                    Expr::LitStr(_, s) => s.clone(),
+                                                                    Expr::LitNumber(_, s) => {
+                                                                        s.clone()
+                                                                    }
+                                                                    Expr::LitBool(_, s) => {
+                                                                        s.clone()
+                                                                    }
+                                                                    Expr::Ident(_, s) => s.clone(),
+                                                                    Expr::Call { span, .. } => {
+                                                                        span.clone()
+                                                                    }
+                                                                    Expr::Index {
+                                                                        span, ..
+                                                                    } => span.clone(),
+                                                                    Expr::Binary {
+                                                                        span, ..
+                                                                    } => span.clone(),
+                                                                    Expr::Unary {
+                                                                        span, ..
+                                                                    } => span.clone(),
+                                                                    Expr::Member {
+                                                                        span, ..
+                                                                    } => span.clone(),
+                                                                    Expr::When { span, .. } => {
+                                                                        span.clone()
+                                                                    }
+                                                                    Expr::Lambda {
+                                                                        span, ..
+                                                                    } => span.clone(),
+                                                                };
+                                                                body_stmts.push(Stmt::ExprStmt(
+                                                                    expr, span,
+                                                                ));
+                                                            }
+                                                        }
+                                                    }
+                                                    body.push(Stmt::For {
+                                                        var: var_name,
+                                                        iterable,
+                                                        body: body_stmts,
+                                                        span: kspan.clone(),
+                                                    });
+                                                }
+                                            }
+                                        }
                                         Some(_) => {
                                             if let Some(expr) = self.parse_expr(0) {
                                                 // consume optional semicolon
@@ -577,6 +1293,8 @@ impl<'a> Parser<'a> {
                                                     Expr::Binary { span, .. } => span.clone(),
                                                     Expr::Unary { span, .. } => span.clone(),
                                                     Expr::Member { span, .. } => span.clone(),
+                                                    Expr::When { span, .. } => span.clone(),
+                                                    Expr::Lambda { span, .. } => span.clone(),
                                                 };
                                                 body.push(Stmt::ExprStmt(expr, span));
                                             } else {
@@ -682,5 +1400,10 @@ impl<'a> Parser<'a> {
             }
         }
         nodes
+    }
+
+    // Public wrapper to parse a single expression from tokens (used by external helpers)
+    pub fn parse_single_expr(&mut self) -> Option<Expr> {
+        self.parse_expr(0)
     }
 }

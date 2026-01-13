@@ -68,6 +68,16 @@ pub enum Expr {
         right: Box<Expr>,
         span: Span,
     },
+    When {
+        scrutinee: Option<Box<Expr>>,
+        arms: Vec<(Pattern, Expr)>,
+        span: Span,
+    },
+    Lambda {
+        params: Vec<String>,
+        body: Box<Expr>,
+        span: Span,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -82,6 +92,32 @@ pub enum Stmt {
     },
     Return(Option<Expr>, Span),
     Block(Vec<Stmt>, Span),
+    For {
+        var: String,
+        iterable: Expr,
+        body: Vec<Stmt>,
+        span: Span,
+    },
+    While {
+        cond: Expr,
+        body: Vec<Stmt>,
+        span: Span,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Pattern {
+    LitNumber(String, Span),
+    LitStr(String, Span),
+    LitBool(bool, Span),
+    Range(String, String, Span),
+    Array(Vec<Pattern>, Span),
+    Bind(String, Span),
+    IsBind(String, String, Span),
+    InExpr(Expr, Span),
+    IsType(String, Span),
+    NotIsType(String, Span),
+    Else(Span),
 }
 
 impl Node {

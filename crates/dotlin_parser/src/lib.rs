@@ -17,6 +17,13 @@ pub fn parse_to_ast(src: &str) -> Vec<Node> {
     p.parse_top_level()
 }
 
+/// Parse a single expression from source and return the AST `Expr` if successful.
+pub fn parse_expr(src: &str) -> Option<ast::Expr> {
+    let toks = lex(src);
+    let mut p = parser::Parser::new(&toks);
+    p.parse_single_expr()
+}
+
 #[cfg(test)]
 mod tests {
     use super::{Node, parse_to_ast, parse_to_tokens};

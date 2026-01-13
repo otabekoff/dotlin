@@ -61,7 +61,7 @@ fn run_file(path: &str, extras: &Vec<String>) -> Result<(), String> {
             dotlin_parser::ast::Node::Function {
                 name,
                 params,
-                return_type: _,
+                return_type,
                 body,
                 expr_body,
                 ..
@@ -72,6 +72,7 @@ fn run_file(path: &str, extras: &Vec<String>) -> Result<(), String> {
                     params.clone(),
                     body.clone(),
                     expr_body.clone(),
+                    return_type.clone(),
                 );
                 if name == "main" {
                     main_fn = Some((params.clone(), body.clone()));
