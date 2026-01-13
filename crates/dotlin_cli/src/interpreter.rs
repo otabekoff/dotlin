@@ -78,7 +78,15 @@ impl Env {
 }
 
 pub struct Interpreter {
-    pub funcs: HashMap<String, (Vec<String>, Vec<Stmt>, Option<Expr>, Option<String>)>,
+    pub funcs: HashMap<
+        String,
+        (
+            Vec<(String, Option<String>, Option<Expr>)>,
+            Vec<Stmt>,
+            Option<Expr>,
+            Option<String>,
+        ),
+    >,
     pub env: Env,
 }
 
@@ -93,7 +101,7 @@ impl Interpreter {
     pub fn register_fn(
         &mut self,
         name: String,
-        params: Vec<String>,
+        params: Vec<(String, Option<String>, Option<Expr>)>,
         body: Vec<Stmt>,
         expr_body: Option<Expr>,
         return_type: Option<String>,
@@ -254,7 +262,204 @@ impl Interpreter {
 
     pub fn eval_expr(&mut self, e: Expr) -> Result<Value, String> {
         match e {
-            Expr::LitStr(s, _) => Ok(Value::Str(s)),
+            Expr::LitStr(s, _) => {
+                // simple template/interpolation handling:
+                // - escaped dollar: `\$` -> `$...` literal
+                // - ${ expr } -> evaluate inner expression and interpolate
+                // - $ident -> lookup identifier in env and interpolate its value
+                let mut out = String::new();
+                let chars: Vec<char> = s.chars().collect();
+                let mut i = 0;
+                while i < chars.len() {
+                    let c = chars[i];
+                    if c == '\\' && i + 1 < chars.len() && chars[i + 1] == '$' {
+                        // escaped dollar
+                        out.push('$');
+                        i += 2;
+                    } else if c == '$' {
+                        if i + 1 < chars.len() && chars[i + 1] == '{' {
+                            // find matching '}' taking nesting into account
+                            let mut depth: i32 = 0;
+                            let mut j = i + 1; // at '{'
+                            let mut found = None;
+                            while j < chars.len() {
+                                if chars[j] == '{' {
+                                    depth += 1;
+                                } else if chars[j] == '}' {
+                                    depth -= 1;
+                                    if depth == 0 {
+                                        found = Some(j);
+                                        break;
+                                    }
+                                }
+                                j += 1;
+                            }
+                            if let Some(end) = found {
+                                // inner text between '{' (i+2) and '}' (end)
+                                let inner: String = chars[i + 2..end].iter().collect();
+                                if let Some(expr) = dotlin_parser::parse_expr(&inner) {
+                                    // if parser produced an empty When (arms empty), attempt a token-level fallback
+                                    let mut expr_to_eval = expr.clone();
+                                    if let Expr::When { scrutinee: _, arms, .. } = &expr {
+                                        if arms.is_empty() {
+                                            // try to build a When expr from tokens
+                                            let toks = dotlin_parser::parse_to_tokens(&inner);
+                                            // minimal handling: when (scrut) { <num> -> <expr> else -> <expr> }
+                                            if toks.len() >= 5 && matches!(&toks[0], dotlin_parser::Token::Keyword(k, _) if k == "when") {
+                                                let mut idx = 1;
+                                                // optional '(' scrutinee ')'
+                                                let mut scrut_expr_opt: Option<Expr> = None;
+                                                if idx < toks.len() {
+                                                    if let dotlin_parser::Token::Symbol(s, _) = &toks[idx] {
+                                                        if s == "(" {
+                                                            // find matching ')'
+                                                            idx += 1;
+                                                            // collect token substr
+                                                            let mut inner_start = None;
+                                                            let mut inner_end = None;
+                                                            let mut j = idx;
+                                                            while j < toks.len() {
+                                                                if let dotlin_parser::Token::Symbol(s2, _) = &toks[j] {
+                                                                    if s2 == ")" {
+                                                                        inner_end = Some(match &toks[j-1] { dotlin_parser::Token::Ident(_, sp) | dotlin_parser::Token::Number(_, sp) | dotlin_parser::Token::Str(_, sp) => sp.end, _ => 0 });
+                                                                        break;
+                                                                    }
+                                                                }
+                                                                if inner_start.is_none() {
+                                                                    inner_start = Some(match &toks[j] { dotlin_parser::Token::Ident(_, sp) | dotlin_parser::Token::Number(_, sp) | dotlin_parser::Token::Str(_, sp) => sp.start, _ => 0 });
+                                                                }
+                                                                j += 1;
+                                                            }
+                                                            if let (Some(spos), Some(epos)) = (inner_start, inner_end) {
+                                                                let scrut_src = &inner[spos..epos];
+                                                                if let Some(sexpr) = dotlin_parser::parse_expr(scrut_src) {
+                                                                    scrut_expr_opt = Some(sexpr);
+                                                                }
+                                                            }
+                                                            // advance idx to after ')'
+                                                            while idx < toks.len() {
+                                                                if let dotlin_parser::Token::Symbol(s3, _) = &toks[idx] {
+                                                                    if s3 == ")" { idx += 1; break; }
+                                                                }
+                                                                idx += 1;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                // find '{'
+                                                while idx < toks.len() {
+                                                    if let dotlin_parser::Token::Symbol(s, _) = &toks[idx] {
+                                                        if s == "{" { idx += 1; break; }
+                                                    }
+                                                    idx += 1;
+                                                }
+                                                let mut built_arms: Vec<(dotlin_parser::ast::Pattern, Expr)> = Vec::new();
+                                                while idx < toks.len() {
+                                                    // break on '}'
+                                                    if let dotlin_parser::Token::Symbol(s, _) = &toks[idx] { if s == "}" { break; } }
+                                                    // pattern token
+                                                    if let dotlin_parser::Token::Number(nv, nspan) = &toks[idx] {
+                                                        // numeric pattern
+                                                        let pat = dotlin_parser::ast::Pattern::LitNumber(nv.clone(), nspan.clone());
+                                                        idx += 1;
+                                                        // expect '->'
+                                                        while idx < toks.len() {
+                                                            if let dotlin_parser::Token::Symbol(s2, _) = &toks[idx] { if s2 == "->" { idx += 1; break; } }
+                                                            idx += 1;
+                                                        }
+                                                        // next token should be a string or number expr for arm; use token span to slice
+                                                        if idx < toks.len() {
+                                                            let arm_tok = &toks[idx];
+                                                            let expr_ast_opt = match arm_tok {
+                                                                dotlin_parser::Token::Str(sv, sp) => Some(Expr::LitStr(sv.clone(), sp.clone())),
+                                                                dotlin_parser::Token::Number(nv2, sp2) => Some(Expr::LitNumber(nv2.clone(), sp2.clone())),
+                                                                _ => None,
+                                                            };
+                                                            if let Some(ae) = expr_ast_opt {
+                                                                built_arms.push((pat, ae));
+                                                            }
+                                                            idx += 1;
+                                                        }
+                                                    } else if let dotlin_parser::Token::Keyword(k, kspan) = &toks[idx] {
+                                                        if k == "else" {
+                                                            let pat = dotlin_parser::ast::Pattern::Else(kspan.clone());
+                                                            idx += 1;
+                                                            // expect arrow
+                                                            while idx < toks.len() {
+                                                                if let dotlin_parser::Token::Symbol(s2, _) = &toks[idx] { if s2 == "->" { idx += 1; break; } }
+                                                                idx += 1;
+                                                            }
+                                                            if idx < toks.len() {
+                                                                if let dotlin_parser::Token::Str(sv, sp) = &toks[idx] {
+                                                                    let ae = Expr::LitStr(sv.clone(), sp.clone());
+                                                                    built_arms.push((pat, ae));
+                                                                }
+                                                            }
+                                                            idx += 1;
+                                                        } else {
+                                                            idx += 1;
+                                                        }
+                                                    } else {
+                                                        idx += 1;
+                                                    }
+                                                }
+                                                if !built_arms.is_empty() {
+                                                    let when_expr = Expr::When { scrutinee: scrut_expr_opt.map(Box::new), arms: built_arms, span: 0..0 };
+                                                    expr_to_eval = when_expr;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    match self.eval_expr(expr_to_eval.clone()) {
+                                        Ok(v) => {
+                                            out.push_str(&v.to_string())
+                                        }
+                                        Err(e) => println!("TEMPLATE DEBUG inner='{}' ERR {}", inner, e),
+                                    }
+                                }
+                                i = end + 1;
+                                continue;
+                            } else {
+                                // no matching brace, treat as literal
+                                out.push('$');
+                                i += 1;
+                                continue;
+                            }
+                        } else {
+                            // $ident style
+                            let mut j = i + 1;
+                            let mut ident = String::new();
+                            while j < chars.len() {
+                                let ch = chars[j];
+                                if ch.is_alphanumeric() || ch == '_' {
+                                    ident.push(ch);
+                                    j += 1;
+                                } else {
+                                    break;
+                                }
+                            }
+                            if !ident.is_empty() {
+                                if let Some(v) = self.env.get(&ident) {
+                                    out.push_str(&v.to_string());
+                                } else {
+                                    // unknown ident -> empty (preserve nothing)
+                                }
+                                i = j;
+                                continue;
+                            } else {
+                                out.push('$');
+                                i += 1;
+                                continue;
+                            }
+                        }
+                    } else {
+                        out.push(c);
+                        i += 1;
+                    }
+                }
+                Ok(Value::Str(out))
+            }
             Expr::LitNumber(n, _) => {
                 let parsed = n
                     .parse::<f64>()
@@ -787,19 +992,41 @@ impl Interpreter {
                         // create function env and evaluate expr
                         let original_env = self.env.clone();
                         let mut fn_env = original_env.clone();
-                        if params.len() == 1 && params[0] == "args" {
+                        if params.len() == 1 && params[0].0 == "args" {
                             fn_env.declare(
                                 "args".into(),
                                 Some(Value::Array(evaluated.clone())),
                                 false,
                             );
                         } else {
-                            for (i, pname) in params.iter().enumerate() {
-                                let val = evaluated.get(i).cloned().unwrap_or(Value::Unit);
-                                fn_env.declare(pname.clone(), Some(val), false);
+                            // declare placeholders for all params so defaults can reference earlier params
+                            for (pname, _ptype, _pdefault) in params.iter() {
+                                fn_env.declare(pname.clone(), None, false);
                             }
                         }
                         let previous_env = std::mem::replace(&mut self.env, fn_env);
+                        // now assign parameter values (provided or defaults)
+                        if !(params.len() == 1 && params[0].0 == "args") {
+                            for (i, (pname, ptype, pdefault)) in params.iter().enumerate() {
+                                let val = if let Some(v) = evaluated.get(i) {
+                                    v.clone()
+                                } else if let Some(def_expr) = pdefault {
+                                    self.eval_expr(def_expr.clone())?
+                                } else {
+                                    Value::Unit
+                                };
+                                if let Some(pt) = ptype.clone() {
+                                    if !self.value_matches_type(&val, &pt) {
+                                        return Err(format!(
+                                            "argument {} for parameter {} has unexpected type (expected {})",
+                                            i, pname, pt
+                                        ));
+                                    }
+                                }
+                                // assign into current env (which is fn_env)
+                                self.env.assign(&pname, val)?;
+                            }
+                        }
                         let result = self.eval_expr(expr)?;
                         if let Some(rt) = return_type.clone() {
                             if !self.value_matches_type(&result, &rt) {
@@ -948,24 +1175,48 @@ impl Interpreter {
 
     pub fn run_function(
         &mut self,
-        params: &Vec<String>,
+        params: &Vec<(String, Option<String>, Option<Expr>)>,
         args: &Vec<Value>,
         body: Vec<Stmt>,
     ) -> Result<Option<Value>, String> {
         // create function environment that inherits top-level variables
         let original_env = self.env.clone();
         let mut fn_env = original_env.clone();
-        if params.len() == 1 && params[0] == "args" {
+        if params.len() == 1 && params[0].0 == "args" {
             fn_env.declare("args".into(), Some(Value::Array(args.clone())), false);
         } else {
-            for (i, pname) in params.iter().enumerate() {
-                let val = args.get(i).cloned().unwrap_or(Value::Unit);
-                fn_env.declare(pname.clone(), Some(val), false);
+            // declare placeholders for all params so defaults can reference earlier params
+            for (pname, _ptype, _pdefault) in params.iter() {
+                fn_env.declare(pname.clone(), None, false);
             }
         }
 
         // replace current env with function env and run
         let previous_env = std::mem::replace(&mut self.env, fn_env);
+
+        // now assign parameter values (provided or defaults)
+        if !(params.len() == 1 && params[0].0 == "args") {
+            for (i, (pname, ptype, pdefault)) in params.iter().enumerate() {
+                let val = if let Some(v) = args.get(i) {
+                    v.clone()
+                } else if let Some(def_expr) = pdefault {
+                    self.eval_expr(def_expr.clone())?
+                } else {
+                    Value::Unit
+                };
+                if let Some(pt) = ptype.clone() {
+                    if !self.value_matches_type(&val, &pt) {
+                        return Err(format!(
+                            "argument {} for parameter {} has unexpected type (expected {})",
+                            i, pname, pt
+                        ));
+                    }
+                }
+                // assign into current env (which is fn_env)
+                self.env.assign(&pname, val)?;
+            }
+        }
+
         let result = self.run_block(body)?;
 
         // take the mutated function env back and restore previous env

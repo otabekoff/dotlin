@@ -55,7 +55,10 @@ fn run_file(path: &str, extras: &Vec<String>) -> Result<(), String> {
 
     // build Interpreter and function table
     let mut it = crate::interpreter::Interpreter::new();
-    let mut main_fn: Option<(Vec<String>, Vec<dotlin_parser::ast::Stmt>)> = None;
+    let mut main_fn: Option<(
+        Vec<(String, Option<String>, Option<dotlin_parser::ast::Expr>)>,
+        Vec<dotlin_parser::ast::Stmt>,
+    )> = None;
     for n in ast {
         match n {
             dotlin_parser::ast::Node::Function {

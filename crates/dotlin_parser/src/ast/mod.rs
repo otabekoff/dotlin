@@ -14,7 +14,7 @@ pub enum Node {
     },
     Function {
         name: String,
-        params: Vec<String>,
+        params: Vec<(String, Option<String>, Option<Expr>)>,
         return_type: Option<String>,
         body: Vec<Stmt>,
         expr_body: Option<Expr>,

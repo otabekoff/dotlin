@@ -1,5 +1,5 @@
 //! Parser integration and a tiny AST for Dotlin.
-use dotlin_lexer::{Token, lex};
+pub use dotlin_lexer::{Token, lex};
 pub mod ast;
 mod parser;
 

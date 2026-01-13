@@ -770,8 +770,9 @@ impl<'a> Parser<'a> {
                         }
                     }
 
-                    // parse optional parameter list
-                    let mut params = Vec::new();
+                    // parse optional parameter list (name, optional type, optional default)
+                    let mut params: Vec<(String, Option<String>, Option<crate::ast::Expr>)> =
+                        Vec::new();
                     if let Some(Token::Symbol(s, _)) = self.peek() {
                         if s == "(" {
                             // consume '('
@@ -786,28 +787,35 @@ impl<'a> Parser<'a> {
                                     Some(Token::Ident(_, _)) => {
                                         // consume identifier as parameter name
                                         if let Some(Token::Ident(n2, _)) = self.next() {
-                                            params.push(n2.clone());
-                                            // if type annotation follows, skip tokens until comma or ')' to ignore types
+                                            let mut ptype: Option<String> = None;
+                                            let mut pdefault: Option<crate::ast::Expr> = None;
+                                            // if type annotation follows, capture it
                                             if let Some(Token::Symbol(col, _)) = self.peek() {
                                                 if col == ":" {
                                                     // consume ':'
                                                     self.next();
-                                                    // skip tokens until comma or closing paren
-                                                    loop {
-                                                        match self.peek() {
-                                                            Some(Token::Symbol(s2, _))
-                                                                if s2 == "," || s2 == ")" =>
-                                                            {
-                                                                break;
+                                                    if let Some(tok) = self.next() {
+                                                        match tok {
+                                                            Token::Ident(tn2, _)
+                                                            | Token::Keyword(tn2, _) => {
+                                                                ptype = Some(tn2.clone());
                                                             }
-                                                            Some(_) => {
-                                                                self.next();
-                                                            }
-                                                            None => break,
+                                                            _ => {}
                                                         }
                                                     }
                                                 }
                                             }
+                                            // optional default value with '='
+                                            if let Some(Token::Symbol(eq, _)) = self.peek() {
+                                                if eq == "=" {
+                                                    // consume '='
+                                                    self.next();
+                                                    if let Some(def_expr) = self.parse_expr(0) {
+                                                        pdefault = Some(def_expr);
+                                                    }
+                                                }
+                                            }
+                                            params.push((n2.clone(), ptype, pdefault));
                                         }
                                         // consume optional comma
                                         if let Some(Token::Symbol(c, _)) = self.peek() {

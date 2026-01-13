@@ -10,7 +10,10 @@ fn make_block_fn(
 ) -> Node {
     Node::Function {
         name: name.to_string(),
-        params: params.into_iter().map(|s| s.to_string()).collect(),
+        params: params
+            .into_iter()
+            .map(|s| (s.to_string(), None, None))
+            .collect(),
         return_type: return_type.map(|s| s.to_string()),
         body,
         expr_body: None,
@@ -32,7 +35,7 @@ fn explicit_return_typed_function() {
     let _node = make_block_fn("sum", vec!["a", "b"], Some("Int"), body.clone());
     interp.register_fn(
         "sum".into(),
-        vec!["a".into(), "b".into()],
+        vec![("a".into(), None, None), ("b".into(), None, None)],
         body,
         None,
         Some("Int".into()),
@@ -64,7 +67,7 @@ fn expression_bodied_function_inferred_return() {
     };
     let _fn_node = Node::Function {
         name: "add".into(),
-        params: vec!["a".into(), "b".into()],
+        params: vec![("a".into(), None, None), ("b".into(), None, None)],
         return_type: None,
         body: vec![],
         expr_body: Some(expr.clone()),
@@ -72,7 +75,7 @@ fn expression_bodied_function_inferred_return() {
     };
     interp.register_fn(
         "add".into(),
-        vec!["a".into(), "b".into()],
+        vec![("a".into(), None, None), ("b".into(), None, None)],
         vec![],
         Some(expr),
         Some("Int".into()),
@@ -105,7 +108,7 @@ fn unit_returning_function() {
     let _node = make_block_fn("log", vec!["x"], Some("Unit"), vec![print_stmt.clone()]);
     interp.register_fn(
         "log".into(),
-        vec!["x".into()],
+        vec![("x".into(), None, None)],
         vec![print_stmt],
         None,
         Some("Unit".into()),

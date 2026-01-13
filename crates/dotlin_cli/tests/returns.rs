@@ -20,7 +20,7 @@ fn test_function_return_value() {
     )];
     i.register_fn(
         "add".into(),
-        vec!["a".into(), "b".into()],
+        vec![("a".into(), None, None), ("b".into(), None, None)],
         body,
         None,
         Some("Int".into()),
